@@ -86,20 +86,22 @@ Two evolutions per Tournament, matching the source material's two-cocoon structu
 - **First Evolution** (early in the bracket — exact trigger point is an open question, §7): locks in **Hero / Dark / Neutral** form based on the alignment axis at that moment. Cosmetic + a small passive.
 - **Second Evolution** (later in the bracket): locks in the **dominant stat color** as a mechanical archetype, exactly as the source material's second evolution reads color-dominance (research §5).
 
-Post-second-evolution, continued bonding still visually mutates the Chao (new Bond Cards override old ones in the same slot — see §3.5), matching the source material's "keeps morphing based on what you feed it after evolving" behavior.
+Post-second-evolution, continued bonding still visually mutates the Chao — every Bond Card ever bonded keeps contributing, compounding the look further (see §3.5) — matching the source material's "keeps morphing based on what you feed it" behavior even more directly than the original design did.
 
-### 3.5 Body / Bond slots
+### 3.5 Body Regions & bonding: cumulative, not replaceable (corrected 2026-08-20)
 
-Four slots, standing in for the source material's head/back/hand/foot animal-part locations:
+**This section replaces an earlier, incorrect version of the design.** The original write-up had 4 exclusive Bond Slots where bonding a new card *deleted* whatever was there before. That's wrong, and the fix isn't cosmetic — it changes how Bond Cards, stats, and visuals all work together. Corrected model, grounded in how the source material's feeding actually behaves:
 
-| Slot | Typical Bond Card flavor |
-|---|---|
-| Head | Sensory/perception keywords |
-| Back | Wings/fins/shell — Fly and Swim-leaning keywords |
-| Hands | Power-leaning keywords (grip, climb) |
-| Feet | Run/Stamina-leaning keywords (speed, endurance) |
+- **A Chao can bond any number of Bond Cards over its lifetime.** There is no slot limit and no replacement. Feeding 5 of the same card stacks its effect 5×; feeding a second, different card afterward *adds on top of*, never erases, what's already there.
+- **One card can affect multiple Body Regions at once, with a mix of positive and negative grants.** The user's own example: a Penguin card touches *Legs* (+Swim, −Run), *Arms* (+Swim, −Power), and *Back* (−Fly) — five separate rolls across three regions, from one card. This is a real, textured push-and-pull, not a single stat stick.
+- **Negatives are always smaller in magnitude than positives, as a hard authoring rule.** Stacking "opposed" creature types (Penguin *and* Monkey) dilutes a build — it never zeroes it out. You can always go wide and still come out net-positive somewhere.
+- **Body Regions (working default, flagged open — see roadmap.md):** Legs, Arms, Back, Head, Torso — five regions, replacing the original four (which conflated Legs/Feet and Arms/Hands and had no Torso). Not locked; revisit once real content authoring shows whether 5 is the right count.
+- **Card complexity is rarity-gated (working default, flagged open — see roadmap.md, "TODO: reconsider"):** Commons stay simple — one region, one or two positive stat grants, easy to read at a glance. The full multi-region, mixed-sign "Penguin" pattern is reserved for Uncommon and above, where a card is meant to be a harder, more textured evaluation. This mirrors the existing rarity language (commons are simple, legendaries are complex) rather than inventing a new axis.
+- **Visual appearance blends from the *entire* bonding history, per region — not from whatever's "currently equipped."** A Chao fed Penguins-then-Monkeys looks like a Penguin/Monkey hybrid; a Chao fed Rabbits-then-Elephants looks like a Rabbit/Elephant hybrid — even if the two ended up with similar final stat totals, they should *not* look similar. The look is keyed to specific bonding history, region by region, not to net stats.
+- **Cards can grant special traversal abilities, not just stat numbers.** The user's example: an Elephant-flavored card could let a Chao "walk the riverbed" instead of swimming — a genuinely distinct shortcut mechanic, not just a big Swim number feeding the existing Fly/Swim fork check (§5.1). Not yet designed as a concrete mechanism — see roadmap.md.
+- **New open question, not yet explored:** does Chao **coloring** (skin/fur color pattern, distinct from the 5-color card pie) mean anything — purely cosmetic fun, or does it interact with some mechanic? Raised by the user, not yet decided either way.
 
-Bonding a new Bond Card into an occupied slot **replaces** the old one (its stat/keyword/cosmetic are lost) — this preserves the source material's real tension around re-feeding a different animal type over an already-shaped Chao, and it's the main sink for "I drafted a better version of this slot, do I commit to the swap" decisions.
+**Consequences for what's already built** (Phase 0's bonding engine, `packages/sim/src/chao/bonding.ts`, and most of the 91 authored cards) are real and not yet implemented — see roadmap.md for the concrete migration this requires before Phase 3 work resumes.
 
 ### 3.6 A Chao's lifetime is now a Tournament, not a Generation
 
@@ -117,7 +119,7 @@ Feeding in the source material is really three separable effects bundled into on
 
 | Type | Source-material equivalent | Attaches to | Lifespan | Effect |
 |---|---|---|---|---|
-| **Bond Card** | Animal | A Chao, in one of 4 Bond Slots (§3.5) | Permanent until overwritten | Stat grant (with a rarity-scaled roll toward the card's grade ceiling — see §4.3) + cosmetic body mutation + a passive keyword. Carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) — cosmetic/flavor only now that board-wide synergy breakpoints are cut (§2). |
+| **Bond Card** | Animal | A Chao — cumulatively, across any number of Body Regions (§3.5, **corrected 2026-08-20**) | Permanent, additive — never overwritten or replaced | One or more stat grants (rarity-scaled rolls, §4.3), each tagged to a Body Region and each *possibly negative* — Commons touch one region with positive grants only, Uncommon+ can span multiple regions with a deliberate mix of positive and negative (negatives always smaller in magnitude, §3.5). Cosmetic body mutation per affected region, blending with every other card ever bonded rather than replacing it. Carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) — cosmetic/flavor only now that board-wide synergy breakpoints are cut (§2), but feeds the visual-blend weighting per region. |
 | **Regimen Card** | Chaos Drive | Consumed, no slot | One-time | Flat stat grant, no cosmetic change, no keyword. The "pure numbers" card — always safe to take late in a pack when nothing else fits. |
 | **Technique Card** | Fruit / trained technique | Held in a Technique hand, played during a Race Leg | Consumed on use (Legendary techniques are Exile-on-use — once per Tournament) | A combat trick: costs Energy (§5.2), resolves an immediate effect scoped to the current Leg (e.g. "auto-win the Power check on this Obstacle leg"). No longer usable in a Bout — that scope is gone. |
 | **Trait Card** | Behavior mimicry | A Chao, max 2 concurrent, not slot-limited | Permanent | A passive triggered ability tied to Race-relevant triggers only (`leg_start`, `leg_won`, `race_start`, `stamina_below`) now that Bout-only triggers (`on_hit`, `on_dodge`, `round_start`, `bout_start`) have no resolver to fire in. |
