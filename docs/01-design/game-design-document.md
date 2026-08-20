@@ -2,18 +2,20 @@
 
 *Working title: **Chao Draft**. See [`README.md`](../../README.md) for the trademark note. This document assumes you've read [`chao-garden-research.md`](../00-research/chao-garden-research.md) — it's referenced throughout as "the source material."*
 
+> **Revision note (2026-08-20):** This is a substantial rewrite. The original design paired a Slay-the-Spire node-map run with a Dota Underlords-style multi-Chao board (Fruit economy, Species Tag synergy breakpoints, board leveling). Both are now **cut**. In their place: a single Chao competes in a 24-entrant single-elimination **Tournament**, Karate Bouts are removed (races only), and **Breeding** — previously a deferred post-MVP idea — is now the game's central meta-progression mechanic. Card system, stats, alignment, and evolution are largely unchanged. Anywhere this doc proposes a concrete number or formula that hasn't been playtested, it's flagged as a placeholder — see §8 and the open questions in [`roadmap.md`](../03-roadmap/roadmap.md).
+
 ## 0. Elevator pitch
 
-Raise a creature across one bounded lifetime by drafting cards instead of feeding animals. Build your stable the way Slay the Spire builds a deck — node by node, choice by choice, one run at a time. Manage that stable the way you'd manage an autochess board — economy, levels, synergy breakpoints, duplicates. Then let your creatures do what they always did in the source game: fight and race on their own, because you were never the one in the water.
+Raise a creature by drafting cards instead of feeding animals, MTG-style. Enter it into a 24-entrant single-elimination Tournament, structured as a Slay-the-Spire-style bracket: race, get eliminated or advance, retreat to your Environment between rounds to draft a few more cards and train. Every event resolves on its own — you were never the one in the water — so the only decisions that matter are what you draft, what you bond, and what you load before the race starts. Win or place well enough in the Final Race, and your Chao breeds with an opponent of your choosing; the resulting foal enters the next Tournament, weaker than either parent but carrying a faint trace of their specialization. Lose without being chosen to breed, and the run is over.
 
 ## 1. Design pillars
 
-These are the four constraints every system below has to satisfy. Any feature that violates one of these needs a specific justification in its own section.
+These are the constraints every system below has to satisfy. Any feature that violates one of these needs a specific justification in its own section.
 
-1. **You coach, you don't pilot.** The source material already auto-resolves Races and Karate Bouts from stats and trained behavior (research §2 & §7). No system in this game should ask the player to directly control a Chao mid-event. All player agency happens *before* the event: what you drafted, what you bonded, what you loaded.
+1. **You coach, you don't pilot.** The source material auto-resolves Races from stats and trained behavior (research §6). No system in this game should ask the player to directly control a Chao mid-race. All player agency happens *before* the race: what you drafted, what you bonded, what you loaded.
 2. **Two axes, not one.** The source material's alignment (Hero/Dark/Neutral) and stat-color dominance are independent (research §5). The card system must preserve two independent axes of build identity — not collapse everything into "which color are you."
 3. **The rarity layer should feel discovered, not stated.** The source material hides stat grades behind visible feeding choices (research §3). Card rarity should read the same way in play: you learn a card is powerful by what it does on the field, and pack odds should reward, not spoil, that discovery.
-4. **The run is a lifetime, and lifetimes should want to end well.** The source material already treats a Chao's life as a bounded arc with partial carryover (research §9). A run should have a natural, in-fiction reason to end — not just "you lost" — and finishing it well should matter more than finishing it fast.
+4. **A run is a Tournament, and Tournaments should want to end well.** Where the original design bounded a run by a Chao's lifespan, it's now bounded by the bracket: you're eliminated, or you make the Final Race and (maybe) breed. Finishing well should matter more than finishing fast, and losing without a breeding pick should genuinely end the run — see §6.6.
 
 ## 2. Inspiration-to-system map
 
@@ -21,39 +23,33 @@ These are the four constraints every system below has to satisfy. Any feature th
 |---|---|---|---|---|
 | Feeding animals (stat + body + behavior) | Booster draft: pick cards, pass packs, build a limited pool | Card rewards define your build over a run | — | **Bond Cards**, drafted and fused onto a Chao (§4.2) |
 | Chaos Drives (pure stat, no body change) | Common "filler" stat cards that round out a curve | — | — | **Regimen Cards** (§4.2) |
-| Fruit / one-off buffs | Instants as combat tricks | Combat-turn energy economy | — | **Technique Cards** played mid-Race/Bout (§4.2, §6) |
+| Fruit / one-off buffs | Instants as combat tricks | Race-scoped energy economy | — | **Technique Cards** played mid-Race (§4.2, §5) |
 | Animal-mimicked behavior | Keyword abilities on creatures | — | — | Keywords granted by Bond Cards (§4.2) |
 | Alignment slider (Hero/Dark/Neutral) | Color pie's order/chaos moral coding | — | — | **Alignment** derived from net color balance of bonded cards (§3.3) |
 | Stat-color dominance → 2nd evolution | Color identity & two-color archetypes (guilds) | — | — | **Species/Archetype identity**, color pairs as build-arounds (§4.4) |
 | Hidden stat grades (E–S) | Card rarity (common → mythic) | — | — | **Card rarity tiers** (§4.3) |
-| Multiple animals of the same type reinforcing a look | — | — | Buying 3 copies of a unit to star it up | **Awakening**: 3 copies of a Bond Card fuse into a stronger version (§5.4) |
-| Raising one Chao at a time | — | — | Managing a full board of units | **Garden Board**: a roster of 2–6 Chao (§5.1) |
-| — | — | — | Gold economy, interest, shop rerolls | **Fruit economy**, shop rerolls at Draft nodes (§5.2) |
-| — | — | — | Alliance/trait breakpoints (2/4/6 units) | **Species Tag synergy breakpoints** (§5.5) |
-| — | — | — | Win/loss streak bonuses | Race/Bout streak bonuses (§5.6) |
-| Chao Karate auto-resolution | — | — | Auto-battler combat resolution | **Karate Bout** resolution algorithm (§6.1) |
-| Chao Race legs, forks, obstacles | — | Turn-based encounters with player-chosen cards | — | **Race Legs**, Technique cards spent per leg (§6.2) |
-| Single continuous Garden save | — | Bounded runs, branching map, relics | — | **Generation** = one run; map nodes; **Charms** (§7) |
-| Lifespan → reincarnation @ 10% stats | — | Meta-progression between runs | — | **Reincarnation** as the run-to-run carry-over (§7.5) |
-| Chao Kindergarten (passive training node) | — | "?" event nodes | — | **Kindergarten Event** map node (§7.3) |
-| Black Market Chao | Draft singles / sideboard | Shop node, card removal service | Shop reroll for gold | **Black Market** node (§7.3) |
-| Breeding (2-parent inheritance) | — | — | — | Kept largely as-is as a late-run/NG+ system; see §8 |
+| Multiple animals of the same type reinforcing a look | — | — | Buying 3 copies of a unit to star it up | **Awakening**: 3 copies of a Bond Card fuse into a stronger version (§4.6) |
+| Chao Race legs, forks, obstacles | — | Turn-based encounters with player-chosen cards | — | **Race Legs**, Technique cards spent per leg (§5.1) |
+| Single continuous Garden save | — | Bounded runs, branching map, relics | — | **Tournament** = one run; a 24-entrant bracket instead of a map (§6) |
+| Breeding (2-parent inheritance) | — | Meta-progression between runs | — | **Breeding** at the Final Race — now core, not deferred (§6.4) |
+| Black Market Chao | Draft singles / sideboard | — | Shop reroll for gold | *Cut* — was funded by the now-removed Fruit economy; see §7 open question |
+| Chao Karate auto-resolution | — | — | Auto-battler combat resolution | *Cut.* Races only, for now — see the 2026-08-20 revision note above |
 
 ## 3. The Chao
 
 ### 3.1 Stats
 
-Same five physical stats as the source material, unchanged in name and function, because they already do exactly what's needed (research §1 — Swim doubles as defense, Run as attack speed, Power as damage, which is already an autobattler stat block):
+Same five physical stats as the source material (research §1), all now scoped to Race Legs only — Karate Bout's damage/evasion roles are gone along with the Bout:
 
-| Stat | Role in a Race Leg | Role in a Karate Bout |
-|---|---|---|
-| Swim | Resolves Water legs | Defense (damage reduction) |
-| Fly | Resolves Air/shortcut legs | Evasion (dodge chance) — **new**, see §3.4 |
-| Run | Resolves overall pace / Sprint legs | Attack frequency |
-| Power | Resolves Obstacle legs (pushing, climbing) | Damage dealt + knockback |
-| Stamina | Determines whether a Chao finishes at all (DNF threshold) | Hit points |
+| Stat | Role in a Race Leg |
+|---|---|
+| Swim | Resolves Water legs |
+| Fly | Resolves Air legs and the Flying shortcut fork |
+| Run | Resolves Sprint (and other Run-flavored) legs |
+| Power | Resolves Obstacle/Climb legs |
+| Stamina | Determines whether a Chao finishes at all (DNF threshold) |
 
-Mind and Luck are kept as minor modifiers (Mind affects Technique success chance and Kindergarten-event outcomes; Luck affects crit-style variance) rather than headline stats — they were minor in the source material and stay minor here.
+Mind and Luck are kept as minor modifiers (Mind affects Technique success chance; Luck affects leg-check variance) rather than headline stats — they were minor in the source material and stay minor here.
 
 ### 3.2 The color pie
 
@@ -62,22 +58,12 @@ Every stat is assigned a color, MTG-style. This is the load-bearing translation 
 | Stat | Color | Identity (Slay-the-Spire-style flavor of "what this archetype does") |
 |---|---|---|
 | Stamina | 🟢 Green | Endurance, growth, sustain — the "ramp" color. Big-picture, outlasts. |
-| Run | 🔴 Red | Speed, aggression, tempo — extra attacks, haste, low-cost cards. |
-| Power | ⚫ Black | Force, sacrifice, high-damage single effects. |
-| Fly | 🔵 Blue | Evasion, tempo, card selection — "see more, dodge more." |
-| Swim | ⚪ White | Defense, protection, order — damage prevention and stabilizing. |
+| Run | 🔴 Red | Speed, aggression, tempo — extra actions, haste, low-cost cards. |
+| Power | ⚫ Black | Force, sacrifice, high-impact single effects. |
+| Fly | 🔵 Blue | Evasion, tempo, card selection — "see more, take the shortcut." |
+| Swim | ⚪ White | Defense, protection, order — stabilizing, DNF-proofing. |
 
-Two-color archetypes exist exactly like MTG guilds and work as draft signposts (a full list is in [`card-set-list.md`](card-set-list.md)):
-
-| Pair | Archetype name | Plays like |
-|---|---|---|
-| 🔴🟢 Run/Stamina | **Sprinter** | Aggro racer — wins Sprint legs early, needs Stamina to not gas out. |
-| ⚪🔵 Swim/Fly | **Glider** | Tempo/evasion — takes the shortcut fork, avoids Karate damage entirely. |
-| ⚫🔴 Power/Run | **Brawler** | Karate specialist — fast, hard-hitting, low defense. |
-| 🟢⚫ Stamina/Power | **Bruiser** | Tanky Karate build — outlasts, hits hard late. |
-| ⚪🟢 Swim/Stamina | **Warden** | Defensive control — DNF-proof, wins by not losing. |
-
-All 5 colors pair into 10 unique two-color archetypes total. The remaining 5 (Sentinel, Vanguard, Trickster, Skirmisher, Naturalist) are listed with the rest in [`card-set-list.md`](card-set-list.md#guild-archetypes) alongside example cards, so this file stays focused on the framework rather than the content.
+Two-color archetypes exist exactly like MTG guilds and work as draft signposts (the full 10-pair table, with example cards, is in [`card-set-list.md`](card-set-list.md#guild-archetypes)). Several of the existing archetype identities (Brawler, Bruiser, Sentinel, Trickster) were written with Karate Bout in mind and will need a race-only reframe — flagged as a content follow-up, not resolved in this pass.
 
 ### 3.3 Alignment: a second, independent axis
 
@@ -87,16 +73,16 @@ Per research §5, alignment must stay orthogonal to stat archetype. It's derived
 - Black + Red cards pull toward **Dark** (force, sacrifice, aggression).
 - Blue cards are alignment-neutral (intellect isn't moral) and act as a damper — a Blue-heavy Chao resists drifting either way even if it also holds a couple of White or Black cards.
 
-This is recomputed continuously (not locked at evolution) so late-game re-bonding can genuinely swing a Chao's alignment, same as the source material lets late feeding keep nudging the slider.
+This is recomputed continuously (not locked at evolution) so re-bonding during an Environment Interlude (§6.3) can genuinely swing a Chao's alignment.
 
 ### 3.4 Evolution
 
-Two evolutions per Generation, matching the source material's two-cocoon structure:
+Two evolutions per Tournament, matching the source material's two-cocoon structure — unchanged in spirit from the original design, but simplified now that there's no Bout to gate a combat mechanic behind:
 
-- **First Evolution** (early-run, roughly Act 1 boss): locks in **Hero / Dark / Neutral** form based on the alignment axis at that moment. Cosmetic + a small passive (Hero: +Stamina regen between nodes; Dark: +Fruit from wins; Neutral: cheaper off-color splash cost — see §4.4).
-- **Second Evolution** (Act 2 boss): locks in the **dominant stat color** as a mechanical archetype, exactly as the source material's second evolution reads color-dominance (research §5). This is also where the **Fly** stat's new Evasion role (§3.1) is granted as a body change — wings aren't just cosmetic here, a Fly-dominant second evolution is the only way to access dodge chance in Karate Bouts, mirroring how the source material only lets a Chao fly in the garden after hitting the Fly threshold.
+- **First Evolution** (early in the bracket — exact trigger point is an open question, §7): locks in **Hero / Dark / Neutral** form based on the alignment axis at that moment. Cosmetic + a small passive.
+- **Second Evolution** (later in the bracket): locks in the **dominant stat color** as a mechanical archetype, exactly as the source material's second evolution reads color-dominance (research §5).
 
-Post-second-evolution, continued bonding still visually mutates the Chao (new Bond Cards override old ones in the same slot — see §4.2), matching the source material's "keeps morphing based on what you feed it after evolving" behavior (research §5).
+Post-second-evolution, continued bonding still visually mutates the Chao (new Bond Cards override old ones in the same slot — see §3.5), matching the source material's "keeps morphing based on what you feed it after evolving" behavior.
 
 ### 3.5 Body / Bond slots
 
@@ -104,200 +90,209 @@ Four slots, standing in for the source material's head/back/hand/foot animal-par
 
 | Slot | Typical Bond Card flavor |
 |---|---|
-| Head | Sensory/perception keywords (evasion, card selection) |
+| Head | Sensory/perception keywords |
 | Back | Wings/fins/shell — Fly and Swim-leaning keywords |
-| Hands | Power/Run-leaning keywords (attack, grip, climb) |
+| Hands | Power-leaning keywords (grip, climb) |
 | Feet | Run/Stamina-leaning keywords (speed, endurance) |
 
 Bonding a new Bond Card into an occupied slot **replaces** the old one (its stat/keyword/cosmetic are lost) — this preserves the source material's real tension around re-feeding a different animal type over an already-shaped Chao, and it's the main sink for "I drafted a better version of this slot, do I commit to the swap" decisions.
 
-### 3.6 Lifespan & reincarnation
+### 3.6 A Chao's lifetime is now a Tournament, not a Generation
 
-Kept essentially 1:1 from research §9, because it's the mechanic that makes the Slay-the-Spire run structure fit at all (see §7.5):
+The original design bounded a run by an **Age budget** ticking down across a branching map, ending in a happiness-gated cocoon/reincarnation check. That's gone. A Chao's competitive lifetime is now bounded by **the bracket** (§6): it plays until eliminated, or reaches the Final Race and — if it places well enough — breeds. See §6.6 for exactly what ends a run and what, if anything, is preserved when it does.
 
-- A Generation has a fixed **Age budget** (map length, not real-world time — no need to replicate the "3 hours per Chao-year" real-time pacing).
-- Ending the run — win or lose the final Boss node — triggers the cocoon check.
-- **Happiness** (tracked from how a Chao is treated at Rest Garden nodes and whether it DNFs races) above threshold → **pink cocoon**: reincarnate, carry 10% of final stats and one drafted card "recipe" (unlocked permanently for future starting pools) into the next Generation.
-- Below threshold → **white cocoon**: the Generation ends clean, nothing carries forward except meta-unlocks earned along the way (see §7.6).
+**Open question:** does **Happiness** still exist as a tracked value? The original design used it to gate the reincarnation cocoon; that gate is gone, but Happiness could still matter for something else (a tiebreaker, a Kindergarten-style event, an Environment bonus) — or it could be cut entirely along with the old cocoon system. Not yet decided; see roadmap.md.
 
 ## 4. The card system
 
 ### 4.1 Why cards replace feeding, mechanically
 
-Feeding in the source material is really three separable effects bundled into one action (stat, body, behavior — research §2). Splitting them into distinct card types is what makes a *draft* meaningful: in the source game there's no scarcity or opportunity cost to feeding (go find another rabbit), so there's no real choice. A draft imposes scarcity — you can't have every card, packs are shared with other drafters, and passing a card is a real cost. That scarcity is the entire reason to borrow MTG's draft format rather than just reskinning "buy stats in a shop."
+Feeding in the source material is really three separable effects bundled into one action (stat, body, behavior — research §2). Splitting them into distinct card types is what makes a *draft* meaningful: in the source game there's no scarcity or opportunity cost to feeding (go find another rabbit), so there's no real choice. A draft imposes scarcity — you can't have every card, and passing (or simply not picking) a card is a real cost.
 
 ### 4.2 Card types
 
 | Type | Source-material equivalent | Attaches to | Lifespan | Effect |
 |---|---|---|---|---|
-| **Bond Card** | Animal | A Chao, in one of 4 Bond Slots (§3.5) | Permanent until overwritten | Stat grant (with a rarity-scaled roll toward the card's grade ceiling — see §4.3) + cosmetic body mutation + a passive keyword. Carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) for synergy (§5.5). |
+| **Bond Card** | Animal | A Chao, in one of 4 Bond Slots (§3.5) | Permanent until overwritten | Stat grant (with a rarity-scaled roll toward the card's grade ceiling — see §4.3) + cosmetic body mutation + a passive keyword. Carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) — cosmetic/flavor only now that board-wide synergy breakpoints are cut (§2). |
 | **Regimen Card** | Chaos Drive | Consumed, no slot | One-time | Flat stat grant, no cosmetic change, no keyword. The "pure numbers" card — always safe to take late in a pack when nothing else fits. |
-| **Technique Card** | Fruit / trained technique | Held in a Technique hand, played during a Race Leg or Karate round | Consumed on use (Legendary techniques are Exile-on-use — once per Generation) | A combat trick: costs Energy (§6.3), resolves an immediate effect scoped to the current Leg/round (e.g. "auto-win the Power check on this Obstacle leg," "this round, Swim is treated as 999 for defense"). |
-| **Trait Card** | Behavior mimicry | A Chao, max 2 concurrent, not slot-limited | Permanent | A passive triggered ability, not a stat stick (e.g. "whenever this Chao wins a Leg, gain 1 Fruit"). |
-| **Item Card** | Toys/emblems | A Chao, freely re-equippable each Garden phase | Permanent while equipped, movable | Colorless — draftable and usable regardless of a Chao's color identity. The answer to being color-screwed out of a pack. |
-| **Habitat Card** | — (new; land-equivalent) | Your **Garden Board**, not a Chao | Permanent | Passive Fruit income each round, and reduces splash cost (§4.4) for its color. Functions like a dual land: fixing, not power. |
+| **Technique Card** | Fruit / trained technique | Held in a Technique hand, played during a Race Leg | Consumed on use (Legendary techniques are Exile-on-use — once per Tournament) | A combat trick: costs Energy (§5.2), resolves an immediate effect scoped to the current Leg (e.g. "auto-win the Power check on this Obstacle leg"). No longer usable in a Bout — that scope is gone. |
+| **Trait Card** | Behavior mimicry | A Chao, max 2 concurrent, not slot-limited | Permanent | A passive triggered ability tied to Race-relevant triggers only (`leg_start`, `leg_won`, `race_start`, `stamina_below`) now that Bout-only triggers (`on_hit`, `on_dodge`, `round_start`, `bout_start`) have no resolver to fire in. |
+| **Item Card** | Toys/emblems | A Chao, freely re-equippable | Permanent while equipped, movable | Colorless — draftable and usable regardless of a Chao's color identity. The answer to being color-screwed out of a pack. |
+| **Habitat Card** | — (new; land-equivalent) | Your **Environment** (§6.3), not a Chao | Permanent | A passive that supports training between rounds — exact effect is an open question now that Fruit income is cut; see §7. |
+
+**Content follow-up (not resolved in this pass):** a number of already-authored cards (`packages/sim/src/cards/data/*.ts`) have keywords written around Bout-only triggers (Warthog Tusks' on-hit Knockback+, Jackrabbit Reflex's "always acts first in round 1," Coral Turtle Shell's Bulwark, etc.). These aren't broken — they simply never fire under a race-only resolver, the same way any trigger that never matches just stays silent — but they should eventually be reflavored into Race-relevant effects or explicitly retired. Tracked in the roadmap.
 
 ### 4.3 Rarity
 
-Four tiers, mapped onto the source material's E–S hidden-grade idea (research §3) but made *visible on the card* — the "hidden" part of the source system is instead expressed through **grade-roll variance within a rarity**, not through hiding the rarity itself (pillar #3: discovered through play, not spoiled at the pack level, but also not opaque to the point of being unreadable):
+Four tiers, mapped onto the source material's E–S hidden-grade idea (research §3) but made *visible on the card* — the "hidden" part of the source system is instead expressed through **grade-roll variance within a rarity**, not through hiding the rarity itself:
 
 | Rarity | Pack frequency (per 15-card pack) | Design space |
 |---|---|---|
 | Common | 10 | Simple, single-effect, define the baseline curve. Regimen cards are mostly here. |
 | Uncommon | 3 | A Bond Card with one keyword, or a Trait/Item with a real decision attached. |
 | Rare | 1–2 | Strong keyword, often bends a whole archetype, alignment-relevant. |
-| Legendary | ~1 in 8 packs | Build-around, run-defining. Often a unique Technique or an Awakening-adjacent Bond Card. Named individuals, not generic species (flavor precedent: the source game's unique/rare Chao types). |
+| Legendary | ~1 in 8 packs | Build-around, run-defining. Often a unique Technique or an Awakening-adjacent Bond Card. |
 
-A card's **grade roll** (visible as a small range on the card, e.g. "Swim +12–18") reintroduces the source material's per-instance variance without hiding rarity itself — two commons of the same name aren't always identical, echoing hidden genetics without needing a whole allele system on every basic card.
+A card's **grade roll** (visible as a small range on the card, e.g. "Swim +12–18") reintroduces the source material's per-instance variance without hiding rarity itself.
+
+**Note:** this "15-card pack" frequency table describes the *Draft Booster* format from the original design. It's unclear whether that format (an N-seat pack-passing draft against bots) still has a place anywhere in the new Tournament structure, since the only card acquisition the Tournament spec actually describes is the much smaller Environment Interlude booster (§6.3, 3 packs of 3 cards, no passing). Flagged as an open question — see roadmap.md.
 
 ### 4.4 Color identity, splash cost, and archetypes
 
-A Chao's **color identity** is the union of colors among its currently-bonded cards. Bonding a card whose color isn't already in that identity costs extra Fruit (a **splash tax**), scaling with how far outside the identity it is (0 extra for on-color, small tax for a card sharing a color with the identity, larger tax for a fully foreign color) — this is the design's version of MTG mana-fixing pressure, translated into a currency cost instead of a deckbuilding restriction, because a Chao doesn't build a 40-card deck — it just accumulates whatever you bond onto it.
+A Chao's **color identity** is the union of colors among its currently-bonded cards. The original design charged extra Fruit (a "splash tax") to bond a card outside that identity — with Fruit gone, this mechanic needs a new currency or a new form entirely (e.g., a hard restriction instead of a soft cost, or something the Environment provides). **Open question**, not resolved in this pass — see roadmap.md.
 
-Ten guild-style two-color archetypes exist (five listed in §3.2, the remaining five are each pair's mirror emphasis — full table in the card set doc). Draft **signals** work exactly as in MTG: if a color is being passed unusually often in the packs you're seeing, other drafters (bots, or other players in a multiplayer draft) aren't taking it, and it's open.
+Ten guild-style two-color archetypes still exist (five listed in §3.2, the remaining five in [`card-set-list.md`](card-set-list.md#guild-archetypes)). Draft **signals** still work as in MTG wherever a pack-passing draft format is actually used (§4.3's open question).
 
 ### 4.5 Draft format
 
-At a **Draft Booster** map node:
+Two different card-acquisition moments now exist, and they work differently:
 
-1. Open a pack of 15 cards.
-2. Pick one, pass the rest to the next seat (3–7 AI drafter bots by default, seeded per-run; live players replace bots in multiplayer drafts — see [`architecture.md`](../02-technical/architecture.md#multiplayer--async-model)).
-3. Repeat until packs are empty. Standard MTG "3 packs, 15 cards, passing alternates direction each pack" structure.
-4. Everything you picked joins your **pool** — a shared resource across your whole Garden Board, not a single Chao's deck. Any Chao can be bonded with any pool card, subject to the slot rules and splash tax above.
+- **Draft Booster** (original format, status TBD per §4.3): open a 15-card pack, pick one, pass the rest to the next of 3–7 AI bot seats; repeat for 3 packs. Everything picked joins your pool.
+- **Environment Interlude Booster** (new, §6.3): 3 packs of 3 cards each, pick 1 per pack, no passing — a solo choice, not a shared draft. Much smaller stakes per pick, much more frequent (once per Interlude).
 
-AI drafter bots have simple archetype-affinity weights (see [`architecture.md`](../02-technical/architecture.md#bot-drafting) for the algorithm) so that packs feel like they're being fought over, not handed to you.
+AI drafter bots (where the pack-passing format is used) have simple archetype-affinity weights (see [`architecture.md`](../02-technical/architecture.md#bot-drafting) for the algorithm) so that packs feel like they're being fought over, not handed to you.
 
-## 5. The roster & autochess layer
+### 4.6 Duplicates & Awakening
 
-### 5.1 The Garden Board
+Drafting **three copies of the same named Bond Card** (anywhere in your pool) lets you fuse them into that card's **Awakened** version the next time you bond it — a single stronger card, not three simultaneously equipped ones. This was originally framed as an autochess-board mechanic (porting the 3-copies-to-star-up idea), but it's really always been a card-level mechanic that doesn't need a board at all, so it survives the §2 cut unchanged in spirit.
 
-You don't raise one Chao — you manage a **board** of 2–6, unlocked by spending **Levels** (bought with Fruit, Underlords-style). Board size caps how many Chao can be actively entered into Race/Karate nodes and therefore how much of your drafted pool you can actually put to use — the direct analog of an autochess board-size cap limiting how many units you can field.
+**Tuning (decided 2026-08-20):** an Awakened card's stat grant is worth **3.5×** a single copy's average grant — deliberately *more* than three copies stacked additively would total (3.0×), not less. A single copy of Bramble Hare granting an average of 8 Stamina would Awaken into a card averaging 28 Stamina (8 × 3.5), not a diminishing-returns 20 (8 × 2.5). This was a deliberate choice to reward duplicate-heavy drafting as a real alternate strategy (mirroring Auto Chess/Underlords, where 3-starring is often *better* than fielding 3 separate weaker units) rather than a soft consolation prize.
 
-### 5.2 Fruit economy
+## 5. Race resolution
 
-Fruit is the soft currency, generated from three sources, echoing the Underlords economy loop:
+Per pillar #1, none of this is played directly — it's simulated from Chao stats, bonded cards, and pre-loaded Technique cards. (Karate Bout resolution is cut — see the revision note at the top of this doc.)
 
-- **Base income** each round.
-- **Habitat Cards** on your board (§4.2).
-- **Placement/streak bonus**: consecutive Race/Bout wins *or* losses both generate bonus Fruit (win streak rewards momentum; loss streak is a comeback mechanism), taken directly from Underlords' dual win/loss streak design.
+### 5.1 Race Leg resolution
 
-Spend Fruit on: leveling up board size, rerolling/refreshing a Black Market node's offered singles, paying splash tax, or rushing a Rest Garden action.
+A Race is now a sequence of **5 to 8 Legs**, drawing from at least 3 distinct Leg types per race (expanded from the original Start/Sprint/Obstacle/Water/Air set):
 
-### 5.3 Shops vs. draft
-
-Two distinct ways to acquire cards, deliberately kept separate:
-
-- **Draft Boosters** (map nodes): the primary source, pick-based, scarce, shapes archetype identity.
-- **Black Market** (map nodes, §7.3): buy *specific known* singles with Fruit — the autochess "shop reroll" analog, used to fill a known gap (e.g. "I need one more Bird-tag card to hit my breakpoint") rather than to build identity.
-
-### 5.4 Duplicates & Awakening
-
-Drafting **three copies of the same named Bond Card** (across the whole pool, regardless of which Chao they end up on) lets you fuse them into that card's **Awakened** version when next bonded — stronger stat roll, upgraded keyword — directly porting the autochess star-up mechanic (3 copies → 2-star unit) onto cards instead of units. This is the design's strongest single piece of "why autochess and not just MTG": drafting *dupes* is normally a wasted pick in MTG limited, and here it's an explicit alternate strategy, exactly like it is in Auto Chess/Underlords.
-
-### 5.5 Species Tag synergy breakpoints
-
-Every Bond Card carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) — the direct descendant of the source material's literal animal types, and already hinted at by the source's own Type Combinations system (research §5). Count tags across every Bond Card currently equipped anywhere on your board; hitting a breakpoint grants a board-wide passive, Underlords-Alliance-style:
-
-| Tag count | Bonus tier |
-|---|---|
-| 2 | Minor: small flat stat bonus board-wide |
-| 4 | Moderate: a shared keyword board-wide |
-| 6 | Major: unlocks a board-wide Technique card, free, every Generation |
-
-This is what makes drafting "off-archetype" commons still valuable — a mediocre Bond Card that shares a tag with your build-around can be worth taking over a stronger card that doesn't.
-
-### 5.6 Streaks & placement
-
-Race nodes and Karate Bouts report a **placement**, not just win/lose, and both streak types (win and loss, per §5.2) bank Fruit — this keeps a bad Race from being a dead node the way a Slay-the-Spire fight never is, and keeps the economy from being purely a snowball for whoever's already ahead, matching Underlords' comeback-friendly design intent.
-
-## 6. Combat & race resolution
-
-Per pillar #1, none of this is played directly — it's simulated from Chao stats, bonded cards, and pre-loaded Technique cards.
-
-### 6.1 Karate Bout resolution
-
-A Bout is a small number of automatic rounds (default 3) against an opposing Chao (an AI Rival board, an Elite node, or async ghost data — see §9):
-
-1. Each round, **Run** determines turn order/attack count (higher Run = more actions this round, ties broken by Luck).
-2. Each action: attacker's **Power** vs. defender's **Swim** resolves damage (`damage = max(1, Power − Swim/2)`, tunable).
-3. Defender's **Fly**-derived Evasion (only available post-second-evolution, §3.4) rolls a dodge chance before damage applies.
-4. **Stamina** is the hit-point pool; 0 Stamina ends the Bout.
-5. Trait Cards trigger on their listed conditions (start of Bout, on-hit, on-dodge, etc.) throughout.
-6. Any pre-loaded Technique cards fire when their trigger condition is met (player chose *which* to load and in *what priority* before the Bout started — that's the entire player decision for this event).
-
-### 6.2 Race Leg resolution
-
-A Race is a sequence of **Legs** (Start, then 2–4 of Sprint/Obstacle/Water/Air, matching the source material's course variety and forks — research §6):
-
-1. Each Leg checks the relevant stat (Sprint→Run, Obstacle→Power, Water→Swim, Air→Fly) against a course-defined difficulty curve.
-2. Where the source material has a literal fork (walk vs. fly/swim shortcut), the Leg is resolved twice — once to see whether the Chao *takes* the shortcut (a Fly or Swim threshold check) and once for the shortcut Leg itself if taken.
-3. **Stamina** decrements each Leg; hitting 0 before the finish is a DNF (no placement, no streak credit, but no elimination from the run — matches pillar #4, a bad Race shouldn't end a Generation on the spot).
-4. Same as Karate: pre-loaded Technique cards fire on trigger, spending the Energy budget set before the Race began.
-
-### 6.3 Energy
-
-A small per-event budget (default 3, modified by Traits/Items/Habitat bonuses) spent to *load* Technique cards before a Race/Bout begins — Slay-the-Spire's energy economy, but front-loaded into a setup phase rather than spent turn-by-turn mid-combat, since pillar #1 rules out mid-event player input. This keeps the STS-style resource-tension ("I have more good tricks than Energy to load them") without contradicting the "you coach, don't pilot" pillar.
-
-## 7. Run structure
-
-### 7.1 A run is a Generation
-
-One playthrough, from hatching to cocoon, bounded by the Age budget (§3.6).
-
-### 7.2 The map
-
-A branching node graph across 3 Acts, Slay-the-Spire-shaped:
-
-```
-Act 1                          Act 2                          Act 3
-[Hatch]
-   |
-   +--[Draft]--[Race]--+
-   |                    +--[Kindergarten?]--[Draft]--[Elite]--+--[Draft]--[Race]--[Boss: Chaos Cup]
-   +--[Race]--[Draft]---+                                     |
-                          \--[Black Market]--[Rest Garden]----/
-```
-
-(Indicative only — actual graph is procedurally generated per run with seeded branching, same as Slay the Spire's map generator.)
-
-### 7.3 Node types
-
-| Node | What happens | Source-material root |
+| Leg type | Stat checked | Notes |
 |---|---|---|
-| Draft Booster | §4.5 | Feeding, generalized |
-| Race | §6.2 | Chao Race |
-| Karate Bout | §6.1 | Chao Karate |
-| Elite Rival | A Karate Bout or Race against a harder, hand-tuned AI board; better rewards | New (autochess "raid boss" convention) |
-| Kindergarten Event | A narrative "?"-style choice node with Mind-gated outcomes | Chao Kindergarten (research §10) |
-| Rest Garden | Choose one: restore Stamina/Happiness, remove a card from your pool (deck-thinning, STS-style), or attempt an early reincarnation gamble | New, STS rest-site structure |
-| Black Market | §5.3 | Black Market Chao |
-| Boss: Chaos Cup | Act-ending Race+Bout combo against a named Rival | New, STS boss-fight convention |
+| Sprint | Run | Straightforward pace check. |
+| Obstacle / Climb | Power | Climb is a distinct narrative flavor of the same Power check — **open question** whether it deserves its own difficulty curve or is purely cosmetic, see roadmap.md. |
+| Jump | Run (proposed) | New leg type requested for variety. **Open question:** should Jump check Run (an explosive-movement flavor of the existing stat) or introduce a new stat entirely? Proposed default: reuse Run rather than grow the Stat union, pending confirmation. |
+| Water | Swim | |
+| Air | Fly | |
+| (Flying/Swim shortcut fork) | Fly or Swim | Not a Leg type on its own — a fork attached to any Leg, resolved as: a threshold check on the fork's stat decides whether the shortcut is taken, then a second check (same stat) resolves the shortcut Leg itself. Unchanged from the original design. |
 
-### 7.4 Charms
+Resolution, per Leg:
 
-Permanent, run-wide passive items found at Elite/Boss nodes and rare event outcomes — the direct relic equivalent (e.g. "Chaos Emerald Shard: +1 Energy," "Lucky Ring: reroll one failed Leg check per Race"). Not drafted from packs; found, so they don't compete with the color-identity economy.
+1. Check the Leg's stat against a course-defined difficulty curve (with a small variance roll, not pure determinism — see roadmap.md's tuning notes).
+2. If the Leg has a shortcut fork, resolve it as described above.
+3. **Stamina** decrements each Leg; hitting 0 before the finish is a DNF.
+4. Pre-loaded Technique cards fire on trigger, spending the Energy budget set before the Race began (§5.2).
 
-### 7.5 Reincarnation as meta-progression
+**DNF consequence, revised:** in the original design, a DNF didn't eliminate a Chao from its run — only the final cocoon check mattered. Under the Tournament structure, **a Race directly determines elimination** (last place is out, per §6.2) — so a DNF is likely to *mean* elimination now, since finishing last (or not finishing) in an elimination race ends the Chao's Tournament. This is a meaningful tonal shift from the original design's "a bad Race shouldn't end things on the spot" pillar, and is called out explicitly since it's a direct consequence of the harsher elimination structure the user has chosen (§6.6 confirms this is intentional).
 
-Exactly as scoped in §3.6 and research §9: a well-ended Generation carries 10% of final stats plus one permanently-unlocked card recipe forward. This is the game's *only* run-to-run power carryover by design — deliberately thin, because Slay the Spire's model (and the source material's own reincarnation rule) both treat meta-progression as a *small* nudge, not a power escalator. The bulk of "getting better at the game" should be player skill (drafting, archetype reading) and unlocked *content variety* (§7.6), not stat inflation.
+### 5.2 Energy
 
-### 7.6 Difficulty Rank
+A small per-Race budget (default 3, modified by Traits/Items/Habitat bonuses) spent to *load* Technique cards before a Race begins — Slay-the-Spire's energy economy, front-loaded into a setup phase rather than spent turn-by-turn, since pillar #1 rules out mid-race player input.
 
-After a full Generation completes (reincarnated or not), a Difficulty Rank unlocks — Ascension-style modifiers for repeat runs (tougher Elite/Boss AI, stingier Fruit income, smaller starting Age budget) rather than a story gate. Also the unlock track for cosmetic-only rewards (new Chao base looks, alternate Habitat art) to keep long-term goals from being stat-shaped.
+## 6. The Tournament
 
-## 8. Breeding (kept, scoped down)
+### 6.1 Overview
 
-Full genetic-allele breeding (research §8) is **explicitly out of scope for MVP** (see roadmap) but is documented here because it's a natural post-MVP layer: two Chao that both survive to the end of a Generation on the same board could produce an egg that becomes the following Generation's starting Chao, with the same dominant/recessive grade-inheritance the source material uses, applied to card-grade rolls instead of raw stats. Cut for MVP because it requires the multi-Chao-survival and cross-Generation state tracking that reincarnation alone (§7.5) already covers more simply.
+A run is a single **Tournament**: a 24-entrant single-elimination bracket the player's one Chao competes in alongside 23 others (bot-controlled, or eventually other players' saved lineages — see §7). It replaces the original branching-map "Generation" entirely.
 
-## 9. Multiplayer / async note
+### 6.2 The Bracket
 
-Draft bots (§4.5) and Rival boards (§7.2) are AI by default so the whole loop works single-player. The natural multiplayer extension — live human co-drafters, and async "ghost" Race/Bout results pulled from other players' finished Generations as your Elite/Rival opponents (Slay the Spire's own asynchronous-ghost convention, by way of its dev's earlier work) — is scoped in [`architecture.md`](../02-technical/architecture.md#multiplayer--async-model) as a post-MVP milestone, not a launch requirement.
+```
+Round 1 — 4 groups of 6, 3 races each (last place eliminated per race: 6→5→4→3)
+   Group 1        Group 2        Group 3        Group 4
+   (6→5→4→3)      (6→5→4→3)      (6→5→4→3)      (6→5→4→3)
+        \              /               \              /
+         \            /                 \            /
+          [ ENVIRONMENT INTERLUDE #1 — §6.3 ]
+                |                                |
+Round 2 —  Group 1+2 → Group12          Group 3+4 → Group34
+           (6→5→4→3)                     (6→5→4→3)
+                \                                /
+                 \                              /
+          [ ENVIRONMENT INTERLUDE #2 — §6.3 ]
+                              |
+Round 3 —      Group12 + Group34 → Group1234
+                    (6→5→4→3)
+                              |
+                    FINAL RACE (§6.4) — 3 racers, 10 Legs
+                              |
+                  1st / 2nd / 3rd place determined
+                              |
+                          BREEDING (§6.4)
+```
 
-## 10. Design risks
+24 entrants → 12 (after Round 1) → 6 (after Round 2) → 3 (after Round 3) → ranked by the Final Race. The player's Chao occupies one of the 24 slots; **only the player's own bracket path is actively played** — the other groups' races resolve independently (bot vs. bot) to produce the entrants the player's consolidated groups will later contain. *(Assumption, not yet confirmed with the user — flagged in roadmap.md.)*
+
+Every group-stage race eliminates exactly the last-place finisher; the group shrinks by one each race until 3 remain, then consolidates with another 3-chao group for the next round.
+
+### 6.3 Environment Interludes
+
+Twice per Tournament — after Round 1 and after Round 2, but **not** between Round 3 and the Final Race — the player returns to their **Environment** (the direct descendant of the original design's "Garden Board," now scoped to a single Chao's support structure rather than a multi-Chao roster):
+
+1. Open 3 Environment Interlude Boosters (3 cards each, §4.5), picking 1 card from each — 3 cards total.
+2. Apply drafted cards **to the Environment first** (Habitat Cards, or anything Environment-scoped), *then* train — bond the remaining drafted cards onto the Chao. This ordering is intentional (per the user's spec): you might draft an Environment upgrade that changes what training is worth doing.
+
+### 6.4 The Final Race & Breeding
+
+The Final Race is longer and structurally distinct from a group-stage race — 10 Legs for now ("we will design this better later," per the user). It ranks the surviving 3 entrants 1st/2nd/3rd, which sets up **Breeding**:
+
+- **1st place** picks any other Tournament entrant (from the full 24) to breed with, except the 2nd- and 3rd-place finishers.
+- **2nd place** picks any entrant except anyone from the **Group1234** pool (the 6 chao who made it to Round 3).
+- **3rd place** picks any entrant except anyone from **Group1234, Group12, or Group34** — narrowing the pool to only chao eliminated in Round 1.
+
+Each pairing produces exactly one baby — **three babies total**, one per finalist — who enter the next Tournament (§6.5). This tiered exclusion means 1st place has the widest breeding pool (21 of 24 possible partners) and 3rd place the narrowest (only Round-1 casualties) — a legibility risk worth watching in playtesting (a player needs to understand *why* they can't pick a given partner; see §8).
+
+#### Breeding: stat and temperament inheritance (proposed algorithm, not yet playtested)
+
+The user's spec: the baby should resemble both parents, should **not** be a flat 50/50 average, and should be **10–20% as strong as the parents**. Proposed formula, per stat:
+
+```
+for each stat:
+  w = random value in [0.3, 0.7]           // rolled per stat, not once per baby —
+                                             // gives the baby its own per-stat lean
+                                             // toward one parent or the other
+  blended = parentA.stat * w + parentB.stat * (1 - w)
+
+strengthFactor = random value in [0.10, 0.20]   // rolled ONCE per baby, applied to
+                                                  // every stat uniformly, so the baby
+                                                  // is coherently "one generation weaker"
+                                                  // rather than randomly strong in some
+                                                  // stats and negligible in others
+
+baby.stat = round(blended * strengthFactor)   // for every stat
+```
+
+Alignment/temperament: blend `parentA.alignmentValue` and `parentB.alignmentValue` with the same per-stat-style random weight, but note that alignment is *derived* from currently-bonded cards (§3.3), not stored independently — so this blended value only matters as a **starting bias** if the baby inherits any cards at all (see below); otherwise a card-less baby simply starts Neutral by construction, regardless of parentage.
+
+This is a first-draft proposal, not a locked design — see roadmap.md for the specific numbers (weight range, strength-factor range) flagged as open.
+
+#### Breeding: cosmetic and skill inheritance (proposed algorithm, not yet playtested)
+
+The user's spec: a baby should look like "a slightly modified base Chao" even if its parents are heavily specialized, with **visual specialization creeping in more over the course of the game** as more Tournaments (and generations of breeding) pass. Proposed approach:
+
+- A baby starts with **empty Bond Slots** (a blank cosmetic slate), except for a small number of slots seeded with a scaled-down copy of one parent's Bond Card — this is what gives "a slightly modified base Chao" its modification, rather than a fully blank start.
+- The **number of inherited slots** scales with how many Tournaments the lineage has been through: proposed placeholder formula `inheritedSlotCount = min(4, floor(tournamentNumber / 3))` — Tournament 1–2 babies inherit 0 slots (pure base look), Tournament 3–5 babies inherit 1, and so on up to all 4 slots by Tournament 12+. **Not tuned or playtested** — purely illustrative of the intended curve shape (slow creep, not immediate full specialization).
+- Any inherited Bond Card's stat grant is rolled down the same way as a stat (10–20% of the original, per the strengthFactor above) — a baby never starts with a parent's full-strength keyword, only a faint echo of it.
+
+### 6.5 Tournament-to-tournament progression
+
+The 3 babies produced by Breeding fill 3 of the next Tournament's 24 slots. The remaining 21 are freshly generated, but **seeded partly from a persistent pool of past Tournament winners** ("thus preserving difficulty," per the user's spec) rather than being purely random every time — meaning the field of opponents should get tougher over the course of a playthrough (or across playthroughs, if this pool is shared) as more winning lineages accumulate. The exact mechanism (how large the pool gets, what fraction of the 21 slots draw from it vs. pure random generation, whether it's local to one player's save or shared/global) is **not yet designed** — see roadmap.md.
+
+### 6.6 Scoring & Elimination
+
+- **Elimination is final.** If the player's Chao is eliminated from the bracket and isn't chosen by any of the three Final Race finalists as a breeding partner, the run ends — full stop, no soft continuation, no fresh Chao handed to the player. This was a deliberate choice (confirmed 2026-08-20), consistent with pillar #4's "should genuinely end."
+- **Score** is generated from race placements across the whole run (exact formula not yet designed — "just give points for how they finish in each race," per the user's spec; see roadmap.md).
+- The player can inspect their Chao at any time — both its stats and its current visual/cosmetic state.
+
+## 7. Multiplayer / async note
+
+Bot-generated Tournament entrants (§6.5) are the natural home for the "async ghost" idea from the original design: instead of (or alongside) procedurally generated opponents, some of the 21 non-baby entrant slots each Tournament could be populated by real other players' saved Chao lineages, snapshotted server-side. Because Race resolution is a pure function of a Chao's stats/cards + a seed, this requires no new resolver logic — only a new source for where an entrant's `Chao` data comes from. Still explicitly post-MVP; not required for a single-player Tournament loop to work.
+
+## 8. Design risks
 
 | Risk | Why it matters | Mitigation |
 |---|---|---|
-| Draft + autochess + roguelike is three resource-management layers (Fruit, Energy, pool scarcity) stacked at once — could overwhelm a player who just wants to raise a cute creature. | Source material's core appeal is low-stakes, ambient care. Over-systematizing it risks losing that entirely. | MVP scope (roadmap) deliberately sequences layers: draft+bonding first and playable *alone* before autochess-board and run-map layers are added, so each layer can be play-tested for whether it's additive or just noisy. |
-| "You coach, don't pilot" (pillar 1) may read as low-agency compared to genre expectations for a "battler." | Players raised on active-battle genre conventions may expect direct control. | Lean into pre-event *loadout* decisions (Technique priority order, Trait choice) as the skill expression, and make sure the resolution log is legible (a Race/Bout should be watchable and readable, not a black-box number, so the auto-resolution still feels earned). |
-| Splash tax (§4.4) needs careful tuning — too cheap and color identity is meaningless, too expensive and off-color Legendary pulls are unusable, which feels bad in a game with pack-opening dopamine built in. | Directly affects draft-pick satisfaction. | Tune splash tax against the Habitat-card fixing rate (§4.2) as one combined knob, not independently; playtest against the "did I ever regret taking the powerful off-color card" question specifically. |
-| Species Tag breakpoints (§5.5) and color archetypes (§3.2) are two overlapping build-around axes (tag synergy vs. color synergy) — could produce contradictory draft signals. | Two orthogonal systems both saying "take this" or "don't" can confuse rather than deepen decisions. | Keep tag breakpoints *board-wide* and color archetypes *per-Chao* — they answer different questions ("what should my board look like" vs. "what should this Chao look like") so they should rarely conflict once framed that way in the UI (§ in architecture doc). |
+| A single bad Race can end the entire run (§6.6) — this is now *confirmed* intentional, not a placeholder, but it's still a high-variance structure. | Roguelites can get away with harsh elimination if losing still *feels* meaningful (a story, a score) — if it just feels like bad luck with no narrative or skill signal, it reads as unfair rather than tense. | Lean hard on the event-log narration (already built, GDD §5.1/architecture.md §5.1) so *why* a Chao lost is always legible, and make sure scoring (§6.6) rewards how far a run got, not just win/loss, so an early elimination still has something to show for it. |
+| The 23 non-player Tournament entrants need a real generation strategy or the bracket will feel hollow — a wall of procedurally-rolled stat blocks with no visible drafting/personality reads very differently from 23 other "chao that made choices." | The whole design's identity is built on cards + drafting mattering — if opponents are just numbers, half the game's texture is invisible to the player. | Decide (open question, roadmap.md) whether bot entrants get their own mini-draft/bonding pass (expensive but textured) vs. a cheaper procedural stat-and-cosmetic roll (fast but flatter) — likely start cheap for a vertical slice, revisit once the core loop is proven. |
+| Breeding's three-tier exclusion pool (1st/2nd/3rd place have progressively narrower eligible partners, §6.4) is intricate — a player choosing a breeding partner needs to understand *why* certain chao are greyed out. | Confusing exclusion rules undermine what should be a triumphant, legible moment (you won, now pick your favorite rival to carry on your line). | UI should show *why* a given entrant is ineligible (e.g., "made it to the Final 6 — 2nd place can't pick them"), not just grey them out silently. |
+| Several already-authored cards (§4.2) have keywords written for a Bout that no longer exists — they're inert, not broken, but a player drafting them gets a dead-feeling card. | Undermines pillar #3 (rarity/power should be *discovered*, not a trap) if a drafted Rare or Legendary quietly does nothing. | Content follow-up pass (roadmap.md) to reflavor Bout-only keywords into Race-relevant effects before this card set is treated as ship-ready, not just left as a known gap indefinitely. |
+| Splash tax (§4.4) has no funding source anymore now that Fruit is cut — color identity currently has no cost at all, which may make color commitment meaningless. | Directly affects draft-pick tension; color identity was one of the design's core levers. | Open question, roadmap.md — needs a decision before Phase-level implementation resumes. |
