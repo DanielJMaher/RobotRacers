@@ -105,7 +105,7 @@ Bonding a new Bond Card into an occupied slot **replaces** the old one (its stat
 
 The original design bounded a run by an **Age budget** ticking down across a branching map, ending in a happiness-gated cocoon/reincarnation check. That's gone. A Chao's competitive lifetime is now bounded by **the bracket** (§6): it plays until eliminated, or reaches the Final Race and — if it places well enough — breeds. See §6.6 for exactly what ends a run and what, if anything, is preserved when it does.
 
-**Open question:** does **Happiness** still exist as a tracked value? The original design used it to gate the reincarnation cocoon; that gate is gone, but Happiness could still matter for something else (a tiebreaker, a Kindergarten-style event, an Environment bonus) — or it could be cut entirely along with the old cocoon system. Not yet decided; see roadmap.md.
+**Shelved (2026-08-20), not cut:** does **Happiness** still exist as a tracked value? The original design used it to gate the reincarnation cocoon; that gate is gone. Explicitly parked rather than decided either way — the user flagged it as "could definitely become an interesting balance mechanic" and wants to revisit it deliberately later rather than have it disappear by default or get bolted onto something prematurely now.
 
 ## 4. The card system
 
@@ -248,46 +248,36 @@ The Final Race is longer and structurally distinct from a group-stage race — 1
 
 Each pairing produces exactly one baby — **three babies total**, one per finalist — who enter the next Tournament (§6.5). This tiered exclusion means 1st place has the widest breeding pool (21 of 24 possible partners) and 3rd place the narrowest (only Round-1 casualties) — a legibility risk worth watching in playtesting (a player needs to understand *why* they can't pick a given partner; see §8).
 
-#### Breeding: stat and temperament inheritance (proposed algorithm, not yet playtested)
+#### Breeding: stat inheritance (decided 2026-08-20 — v1, simplified)
 
-The user's spec: the baby should resemble both parents, should **not** be a flat 50/50 average, and should be **10–20% as strong as the parents**. Proposed formula, per stat:
+The earlier proposal here (a randomized per-stat blend weight plus a random 10–20% strength factor) is **replaced** with a flat, deterministic formula for now:
 
 ```
 for each stat:
-  w = random value in [0.3, 0.7]           // rolled per stat, not once per baby —
-                                             // gives the baby its own per-stat lean
-                                             // toward one parent or the other
-  blended = parentA.stat * w + parentB.stat * (1 - w)
-
-strengthFactor = random value in [0.10, 0.20]   // rolled ONCE per baby, applied to
-                                                  // every stat uniformly, so the baby
-                                                  // is coherently "one generation weaker"
-                                                  // rather than randomly strong in some
-                                                  // stats and negligible in others
-
-baby.stat = round(blended * strengthFactor)   // for every stat
+  baby.stat = round(0.10 * parentA.stat + 0.10 * parentB.stat)
 ```
 
-Alignment/temperament: blend `parentA.alignmentValue` and `parentB.alignmentValue` with the same per-stat-style random weight, but note that alignment is *derived* from currently-bonded cards (§3.3), not stored independently — so this blended value only matters as a **starting bias** if the baby inherits any cards at all (see below); otherwise a card-less baby simply starts Neutral by construction, regardless of parentage.
+That's it — no randomness, no per-stat lean. Each parent contributes a flat 10% of their own value; since both parents are usually similar magnitude, this lands the baby at roughly 20% of a single parent's strength (or 10% of their *combined* total), comfortably inside the originally-requested "10–20% as strong as parents" range without needing two separate random rolls to get there. This deliberately drops the "not 50/50" per-stat-lean texture from the earlier proposal — that's a reasonable thing to reintroduce in a future balance pass, not lost, just not worth the complexity for a first working version.
 
-This is a first-draft proposal, not a locked design — see roadmap.md for the specific numbers (weight range, strength-factor range) flagged as open.
+#### Breeding: cosmetic and skill inheritance — **deferred to a future "Next Up" discussion**
 
-#### Breeding: cosmetic and skill inheritance (proposed algorithm, not yet playtested)
-
-The user's spec: a baby should look like "a slightly modified base Chao" even if its parents are heavily specialized, with **visual specialization creeping in more over the course of the game** as more Tournaments (and generations of breeding) pass. Proposed approach:
-
-- A baby starts with **empty Bond Slots** (a blank cosmetic slate), except for a small number of slots seeded with a scaled-down copy of one parent's Bond Card — this is what gives "a slightly modified base Chao" its modification, rather than a fully blank start.
-- The **number of inherited slots** scales with how many Tournaments the lineage has been through: proposed placeholder formula `inheritedSlotCount = min(4, floor(tournamentNumber / 3))` — Tournament 1–2 babies inherit 0 slots (pure base look), Tournament 3–5 babies inherit 1, and so on up to all 4 slots by Tournament 12+. **Not tuned or playtested** — purely illustrative of the intended curve shape (slow creep, not immediate full specialization).
-- Any inherited Bond Card's stat grant is rolled down the same way as a stat (10–20% of the original, per the strengthFactor above) — a baby never starts with a parent's full-strength keyword, only a faint echo of it.
+Not decided yet, on purpose. For v1, a baby simply starts as a fresh Chao with **empty Bond Slots, no Traits, no Items** — a blank slate — with only its stats pre-seeded per the formula above. It does *not* yet get "a slightly modified base Chao" look, a partial inherited keyword, or the specialization-creeps-in-over-many-Tournaments curve the user originally described — all of that is real, good design that's being set aside for a dedicated future session rather than rushed alongside the simpler stat decision. Alignment is unaffected by this deferral: with no bonded cards at all, a v1 baby is simply Neutral by construction (§3.3), regardless of parentage — exactly the fallback case the original proposal already called out.
 
 ### 6.5 Tournament-to-tournament progression
 
-The 3 babies produced by Breeding fill 3 of the next Tournament's 24 slots. The remaining 21 are freshly generated, but **seeded partly from a persistent pool of past Tournament winners** ("thus preserving difficulty," per the user's spec) rather than being purely random every time — meaning the field of opponents should get tougher over the course of a playthrough (or across playthroughs, if this pool is shared) as more winning lineages accumulate. The exact mechanism (how large the pool gets, what fraction of the 21 slots draw from it vs. pure random generation, whether it's local to one player's save or shared/global) is **not yet designed** — see roadmap.md.
+The 3 babies produced by Breeding fill 3 of the next Tournament's 24 slots. The remaining 21 are freshly generated, but **seeded partly from a persistent pool of past Tournament winners** ("thus preserving difficulty," per the user's spec) rather than being purely random every time. Genuinely undesigned so far — the *intent* (opponents get tougher over time) is clear, but none of the mechanism is:
+
+- **What actually goes in the pool?** The literal finalist Chao who won (meaning it could show up again later as a rival, even though its own storyline "ended" when it bred)? Or something more abstract — a stat template/archetype snapshot representing "how strong a winning bloodline was," used to seed a *new* procedurally-generated entrant at a higher-than-random baseline, without literally reusing the same individual? These have very different implications (the first means named rivals can recur across Tournaments; the second means only the *toughness* persists, not the individual).
+- **Pool size and decay.** Does it cap (e.g., the last N winners) with old entries aging out, or grow unbounded for the life of a save — which, over a long playthrough, would eventually mean *most* entrants are pool-derived rather than fresh?
+- **Draw rate.** What fraction of the 21 non-baby slots draw from the pool each Tournament — a fixed count, a percentage chance per slot, or a rate that itself scales with how many Tournaments have passed (ramping difficulty rather than a flat rate from the start)?
+- **Scope.** Is this pool local to one player's own save (their own run's history), or shared/global (a persistent "hall of champions" — which would also make it the natural bridge to the async-ghost multiplayer idea in §7, rather than a separate system)?
+
+None of this is decided — see roadmap.md.
 
 ### 6.6 Scoring & Elimination
 
 - **Elimination is final.** If the player's Chao is eliminated from the bracket and isn't chosen by any of the three Final Race finalists as a breeding partner, the run ends — full stop, no soft continuation, no fresh Chao handed to the player. This was a deliberate choice (confirmed 2026-08-20), consistent with pillar #4's "should genuinely end."
-- **Score** is generated from race placements across the whole run (exact formula not yet designed — "just give points for how they finish in each race," per the user's spec; see roadmap.md).
+- **Score (decided 2026-08-20):** each race awards points by placement — **1st place scores 6, then 1 fewer per place behind** (2nd: 5, 3rd: 4, 4th: 3, 5th: 2, 6th: 1), summed across every race the player's Chao runs over the whole Tournament. A DNF is treated as last place for that race's field (lowest score available, not zero — a DNF still isn't worse than showing up dead last, it just doesn't out-rank anyone). **Technical prerequisite this exposes:** scoring every place, not just picking out the last-place eliminee, means the Race resolver needs to rank *all* racers in a group against each other, not just resolve the player's one Chao in isolation — group-stage elimination already implicitly needed this (you can't identify "last place" without ranking everyone), so this doesn't add new scope, it just makes explicit that Phase 3's bracket work needs full-field ranking, not single-Chao pass/fail.
 - The player can inspect their Chao at any time — both its stats and its current visual/cosmetic state.
 
 ### 6.7 Entrant generation & scouting
