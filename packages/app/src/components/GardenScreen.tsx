@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import type { BodyRegion, BondCard, Card, Chao, RegimenCard, Stat, TechniqueCard } from '@chao-draft/sim';
 import { CardBadge } from './CardBadge';
 
 interface GardenScreenProps {
   chao: Chao;
   pool: Card[];
-  log: string[];
+  selectedTechniqueIds: Set<string>;
   onBondCard: (card: BondCard) => void;
   onConsumeRegimen: (card: RegimenCard) => void;
-  onRunRace: (loadedTechniques: TechniqueCard[]) => void;
+  onToggleTechnique: (id: string) => void;
 }
 
 // Locked 5-region set (GDD §3.5, corrected 2026-08-20) — replaces the old
@@ -30,26 +29,14 @@ const STAT_ORDER: Stat[] = [
 export function GardenScreen({
   chao,
   pool,
-  log,
+  selectedTechniqueIds,
   onBondCard,
   onConsumeRegimen,
-  onRunRace,
+  onToggleTechnique,
 }: GardenScreenProps) {
-  const [selectedTechniqueIds, setSelectedTechniqueIds] = useState<Set<string>>(new Set());
-
   const bondCards = pool.filter((c): c is BondCard => c.type === 'bond');
   const regimenCards = pool.filter((c): c is RegimenCard => c.type === 'regimen');
   const techniqueCards = pool.filter((c): c is TechniqueCard => c.type === 'technique');
-
-  function toggleTechnique(id: string) {
-    setSelectedTechniqueIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   const loadedTechniques = techniqueCards.filter((c) => selectedTechniqueIds.has(c.id));
 
   return (
@@ -62,6 +49,8 @@ export function GardenScreen({
           Colors: {chao.colorIdentity.length > 0 ? chao.colorIdentity.join(', ') : 'none yet'}
           <br />
           Evolution stage: {chao.evolutionStage}
+          {chao.evolvedAlignment !== undefined && <> — locked {chao.evolvedAlignment}</>}
+          {chao.evolvedColor !== undefined && <>, {chao.evolvedColor}</>}
         </p>
 
         <table className="stat-table">
@@ -92,12 +81,6 @@ export function GardenScreen({
             </li>
           ))}
         </ul>
-
-        <div className="event-buttons">
-          <button type="button" onClick={() => onRunRace(loadedTechniques)}>
-            Run a Race
-          </button>
-        </div>
       </div>
 
       <div className="garden-column">
@@ -126,19 +109,10 @@ export function GardenScreen({
               key={`${card.id}-${index}`}
               card={card}
               selected={selectedTechniqueIds.has(card.id)}
-              onClick={() => toggleTechnique(card.id)}
+              onClick={() => onToggleTechnique(card.id)}
             />
           ))}
         </div>
-      </div>
-
-      <div className="garden-column log-column">
-        <h3>Event Log</h3>
-        <ul className="event-log">
-          {log.map((line, index) => (
-            <li key={index}>{line}</li>
-          ))}
-        </ul>
       </div>
     </section>
   );

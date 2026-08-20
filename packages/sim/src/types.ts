@@ -236,6 +236,13 @@ export interface Chao {
   regionLooks: Partial<Record<BodyRegion, string>>;
 
   evolutionStage: 0 | 1 | 2; // 0=unevolved, 1=first (alignment-based), 2=second (color-based)
+  // Set once, at the moment each Evolution triggers (Tournament roadmap.md
+  // Phase 3, GDD §3.4) — frozen thereafter, independent of any later drift in
+  // the live `alignment`/color-identity fields above. The "small passive"
+  // GDD §3.4 mentions each Evolution granting is an explicit open TODO, not
+  // implemented here — this only locks in the cosmetic/flavor identity.
+  evolvedAlignment?: Alignment; // First Evolution: alignment at that moment
+  evolvedColor?: StatColor; // Second Evolution: dominant bonded color at that moment
 
   age: number; // consumed against the Generation's Age budget
   happiness: number; // Rest Garden / DNF-tracked, feeds reincarnation check

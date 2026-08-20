@@ -68,11 +68,15 @@ body {
   color: #c7ccd6;
 }
 
-.garden {
+.tournament-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 320px;
+  grid-template-columns: 260px 1fr 320px 320px;
   gap: 2rem;
   align-items: start;
+}
+
+.garden {
+  display: contents;
 }
 
 .garden-column {
@@ -158,4 +162,44 @@ body {
 .bonding-history-list li {
   padding: 0.2rem 0.4rem;
   border-bottom: 1px solid #2a2e38;
+}
+
+.phase-banner {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #1c1f27;
+  border-radius: 6px;
+  border: 1px solid #2a2e38;
+  font-size: 0.9rem;
+}
+
+.standings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.standings-list li {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #2a2e38;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.standings-list li.is-player {
+  background: #20304a;
+  border-radius: 4px;
+}
+
+.standings-list li.is-eliminated {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.scouting-icons {
+  font-size: 0.75rem;
+  color: #9aa0ab;
+  white-space: nowrap;
 }

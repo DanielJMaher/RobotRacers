@@ -1,6 +1,8 @@
 import './App.css';
 import { DraftScreen } from './components/DraftScreen';
+import { EventLogPanel } from './components/EventLogPanel';
 import { GardenScreen } from './components/GardenScreen';
+import { TournamentPanel } from './components/TournamentPanel';
 import { useGame } from './game/useGame';
 
 export function App() {
@@ -10,7 +12,7 @@ export function App() {
     <main className="app">
       <h1>Chao Draft</h1>
       <p className="subtitle">
-        Draft cards, bond them onto your Chao, then run a Race. See{' '}
+        Draft cards, bond them onto your Chao, then compete in the Tournament. See{' '}
         <code>docs/03-roadmap/roadmap.md</code> for scope.
       </p>
 
@@ -25,15 +27,24 @@ export function App() {
         />
       )}
 
-      {game.phase === 'garden' && game.chao && (
-        <GardenScreen
-          chao={game.chao}
-          pool={game.playerPool}
-          log={game.log}
-          onBondCard={game.bondBondCard}
-          onConsumeRegimen={game.consumeRegimenCard}
-          onRunRace={game.runRace}
-        />
+      {game.phase === 'tournament' && game.chao && game.tournament && (
+        <div className="tournament-layout">
+          <GardenScreen
+            chao={game.chao}
+            pool={game.playerPool}
+            selectedTechniqueIds={game.selectedTechniqueIds}
+            onBondCard={game.bondBondCard}
+            onConsumeRegimen={game.consumeRegimenCard}
+            onToggleTechnique={game.toggleTechnique}
+          />
+          <TournamentPanel
+            tournament={game.tournament}
+            loadedTechniqueCount={game.selectedTechniqueIds.size}
+            onRunNextRace={game.runNextGroupRace}
+            onRunFinalRace={game.runFinalRace}
+          />
+          <EventLogPanel log={game.log} />
+        </div>
       )}
     </main>
   );
