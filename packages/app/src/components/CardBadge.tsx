@@ -22,12 +22,25 @@ const COLOR_LABEL: Record<Card['color'], string> = {
   colorless: '◽',
 };
 
+// Formats a signed number range, handling negative grants cleanly (e.g.
+// Grinding Stone's -2 Fly downside) — a bare `+${min}-${max}` template reads
+// as "+-2--2" once either bound goes negative.
+function formatSigned(value: number): string {
+  return value >= 0 ? `+${value}` : `${value}`;
+}
+
+function formatStatGrant(grant: { stat: string; min: number; max: number }): string {
+  return grant.min === grant.max
+    ? `${grant.stat} ${formatSigned(grant.min)}`
+    : `${grant.stat} ${formatSigned(grant.min)} to ${formatSigned(grant.max)}`;
+}
+
 function describeCard(card: Card): string {
   switch (card.type) {
     case 'bond':
-      return `${card.slot} · ${card.statGrants.map((g) => `${g.stat} +${g.min}-${g.max}`).join(', ')}`;
+      return `${card.slot} · ${card.statGrants.map(formatStatGrant).join(', ')}`;
     case 'regimen':
-      return card.statGrants.map((g) => `${g.stat} +${g.min}-${g.max}`).join(', ');
+      return card.statGrants.map(formatStatGrant).join(', ');
     case 'technique':
       return `${card.scope} · ${card.energyCost} energy`;
     case 'trait':

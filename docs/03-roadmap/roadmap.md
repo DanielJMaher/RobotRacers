@@ -60,7 +60,8 @@ Adds the multi-Chao board and its economy on top of a working single-Chao run.
 
 ## Phase 4 — Content pass
 
-- [ ] Expand the card set from the ~95-card proof-of-concept to a real target size (recommend starting around 180–220 — big enough for repeat-Generation variety, still small enough for one person/small team to balance; revisit after Phase 3 playtesting shows how fast players burn through the smaller set).
+- [x] *(done early, 2026-08-20, ahead of Phase 2/3)* All 5 stat colors implemented as real card data in `packages/sim/src/cards/data/` — Green and Red were Phase 0/1 scope; Black, Blue, and White were added afterward to match `card-set-list.md` in full. 85 cards total (everything in that doc except Twin Garden Spring, deliberately deferred — it needs a modal/choice-on-pick draft mechanic the draft engine doesn't support yet). A `coreGardenSet.test.ts` structural-invariant suite (no duplicate ids, valid stat ranges, every color/rarity represented) now guards the whole hand-authored set. Several cards' flavor text referenced mechanics that don't exist yet (Phase 2/3 systems, board-level effects, draft-time choices, a couple of schema mismatches like Happiness-isn't-a-Stat) — each is flagged with an inline code comment rather than silently dropped or half-implemented; see the `custom` EffectOp notes in `black.ts`/`blue.ts`/`white.ts`/`colorless.ts`.
+- [ ] Expand the card set from the current ~85-card set to a real target size (recommend starting around 180–220 — big enough for repeat-Generation variety, still small enough for one person/small team to balance; revisit after Phase 3 playtesting shows how fast players burn through the smaller set).
 - [ ] Full Kindergarten Event content (a real pool of narrative nodes, not placeholders).
 - [ ] Difficulty Rank modifiers (GDD §7.6).
 - [ ] Balance pass specifically on: splash tax curve, Awakening power level, Legendary rate, Species Tag breakpoint values.
