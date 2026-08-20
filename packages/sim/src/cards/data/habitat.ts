@@ -1,7 +1,13 @@
 import type { HabitatCard } from '../../types';
 
-// "Core Garden" example set — Habitat cards (attach to the Garden Board, not
+// "Core Garden" example set — Habitat cards (attach to the Environment, not
 // a Chao). Source: docs/01-design/card-set-list.md
+//
+// Updated 2026-08-20 (roadmap.md Phase 4, GDD §6.9's revived economy):
+// `fruitPerRound` bumped 1 -> 2 (the revived design's base rate for a single
+// placed Habitat) and `splashTaxReduction` dropped entirely — that was the
+// pre-revival design's per-card tax discount, superseded now that Fruit
+// itself funds the splash tax directly (GDD §4.4).
 
 export const sunlitMeadow: HabitatCard = {
   id: 'habitat.sunlit_meadow',
@@ -10,8 +16,7 @@ export const sunlitMeadow: HabitatCard = {
   type: 'habitat',
   color: 'green',
   fixedColors: ['green'],
-  fruitPerRound: 1,
-  splashTaxReduction: 0.5,
+  fruitPerRound: 2,
 };
 
 export const windsweptCliff: HabitatCard = {
@@ -21,8 +26,7 @@ export const windsweptCliff: HabitatCard = {
   type: 'habitat',
   color: 'red',
   fixedColors: ['red'],
-  fruitPerRound: 1,
-  splashTaxReduction: 0.5,
+  fruitPerRound: 2,
 };
 
 export const ironQuarry: HabitatCard = {
@@ -32,8 +36,7 @@ export const ironQuarry: HabitatCard = {
   type: 'habitat',
   color: 'black',
   fixedColors: ['black'],
-  fruitPerRound: 1,
-  splashTaxReduction: 0.5,
+  fruitPerRound: 2,
 };
 
 export const cloudTerrace: HabitatCard = {
@@ -43,8 +46,7 @@ export const cloudTerrace: HabitatCard = {
   type: 'habitat',
   color: 'blue',
   fixedColors: ['blue'],
-  fruitPerRound: 1,
-  splashTaxReduction: 0.5,
+  fruitPerRound: 2,
 };
 
 export const tidepoolCove: HabitatCard = {
@@ -54,8 +56,7 @@ export const tidepoolCove: HabitatCard = {
   type: 'habitat',
   color: 'white',
   fixedColors: ['white'],
-  fruitPerRound: 1,
-  splashTaxReduction: 0.5,
+  fruitPerRound: 2,
 };
 
 // Twin Garden Spring ("any two, chosen at draft") is deliberately not

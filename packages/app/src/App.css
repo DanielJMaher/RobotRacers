@@ -70,8 +70,14 @@ body {
 
 .tournament-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 320px 320px;
-  gap: 2rem;
+  /* auto-fit + minmax lets columns wrap onto additional rows on narrower
+     viewports instead of forcing 5 columns into one row — a fixed-width
+     layout here caused the pool column's fixed-width card badges to
+     visually overflow into the next column at common viewport widths
+     (~1280px), since the 4 other fixed-width columns alone exceeded that
+     budget. Found via a live Playwright pass, roadmap.md Phase 4. */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
   align-items: start;
 }
 
@@ -123,6 +129,26 @@ body {
 
 .event-buttons button:hover {
   background: #363c4a;
+}
+
+.slot-assign-btn {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2a2e38;
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-left: 0.3rem;
+}
+
+.slot-assign-btn:hover:not(:disabled) {
+  background: #363c4a;
+}
+
+.slot-assign-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .log-column {

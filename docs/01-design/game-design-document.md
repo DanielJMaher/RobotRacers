@@ -148,6 +148,8 @@ A card's **grade roll** (visible as a small range on the card, e.g. "Swim +12–
 
 A Chao's **color identity** is the union of colors among its currently-bonded cards. Bonding a card outside that identity costs extra Fruit (a "splash tax") — **funded again** now that Fruit, Habitats, and Seeds are revived (§6.9, decided 2026-08-20). Reviving the currency resolves *what pays it*; the exact tax curve (flat, or scaling with how far outside the identity a color is) is still a balance/tuning question for Phase 6, same as the rest of this system's numbers.
 
+**Implemented 2026-08-20 (roadmap.md Phase 4):** the tax is now actually enforced, not just computed — `tournament/environment.ts`'s `bondCardWithSplashTax()` blocks a bond outright if the Environment's Fruit balance is short. **Decided at implementation time:** Fruit is tracked as a single pooled number, not per-color — the tax check is color-agnostic (any Fruit, colored or Wildcard, pays it), which is simpler than the per-color bookkeeping a "must match the off-color specifically" rule would need. This does mean a Seed's color (§6.9) is presently flavor/display only, not something any mechanic reads — see that section's own implementation note.
+
 Ten guild-style two-color archetypes still exist (five listed in §3.2, the remaining five in [`card-set-list.md`](card-set-list.md#guild-archetypes)). Draft **signals** still work as in MTG for both the pack-passing Draft Booster and, in a smaller way, the Environment Interlude booster (§4.5).
 
 ### 4.5 Draft format
@@ -336,6 +338,12 @@ Habitat Cards and the Fruit economy were cut in the original Tournament pivot (�
 **Future idea, not built now — TODO to consider:** spending a Wildcard Fruit specifically on a colorless Item Card (§4.2) at a **2-for-1 trade value** (1 Wildcard Fruit counts as 2 regular Fruit toward a colorless card's cost) — reinforcing that Items and Wildcard Fruit are both "the flexible option," and giving Wildcard Fruit a reason to be spent deliberately rather than just being strictly-worse-but-flexible Fruit.
 
 Splash tax (§4.4) is funded by this economy again. Exact numbers (base Fruit rates, tax curve, Seed drop odds) are all real balance/tuning work for Phase 6 — this section resolves the *mechanism*, not the final tuning.
+
+**Implemented 2026-08-20 (roadmap.md Phase 4).** All of the above is real code (`packages/sim/src/tournament/environment.ts`, `interlude.ts`), with two implementation-time decisions worth recording:
+
+- **Fruit is a single pooled number, not tracked per-color.** §4.4's splash tax was decided to be color-agnostic (pay from any Fruit, colored or Wildcard), which means a Seed's `color` and a Habitat's `fixedColors` are presently **flavor and display only** — they change what a slot's UI shows itself producing (matching this section's own worked examples), but not the actual spendable total, which only Habitat star level and Open Fort status affect. A future mechanic that reads Fruit by color specifically would need to re-introduce per-color tracking; nothing does today.
+- **The Interlude Booster draws from a flat pool across all rarities**, not a rarity-slotted structure like the main Draft Booster — this section and §4.5 don't specify a curve for the smaller format, so this is an explicit placeholder, not a considered choice.
+- **Race rewards (Fastest Leg, back-to-back last place) are deliberately deferred**, not part of this phase — they need genuinely new per-Leg cross-racer tracking that didn't exist anywhere in the sim, and this phase's own "done" bar didn't require them. See roadmap.md Phase 4.
 
 ## 7. Multiplayer / async note
 

@@ -29,7 +29,8 @@ export type SpeciesTag = 'rabbit' | 'bird' | 'fish' | 'reptile' | 'insect' | 'be
 
 export type Alignment = 'hero' | 'dark' | 'neutral';
 
-export type CardType = 'bond' | 'regimen' | 'technique' | 'trait' | 'item' | 'habitat';
+// 'seed' added 2026-08-20 (roadmap.md Phase 4, GDD §6.9's revived economy).
+export type CardType = 'bond' | 'regimen' | 'technique' | 'trait' | 'item' | 'habitat' | 'seed';
 
 // ---------------------------------------------------------------------------
 // Effects (shared trigger/effect shape — architecture.md §5.3)
@@ -182,11 +183,38 @@ export interface ItemCard extends CardBase {
 export interface HabitatCard extends CardBase {
   type: 'habitat';
   fixedColors: StatColor[]; // 1 for common Habitats, 2 for e.g. Twin Garden Spring
+  // Base Fruit generated per trigger by a single (1-star) placed Habitat —
+  // GDD §6.9's revived economy: 2 per trigger, at Tournament start and after
+  // every race. `splashTaxReduction` (a per-card tax-discount stat) was the
+  // pre-revival design and no longer applies now that Fruit itself funds the
+  // splash tax directly (GDD §4.4) — removed 2026-08-20 rather than left
+  // dormant, since nothing in the revived design reads it.
   fruitPerRound: number;
-  splashTaxReduction: number; // 0..1, applied per fixedColor
 }
 
-export type Card = BondCard | RegimenCard | TechniqueCard | TraitCard | ItemCard | HabitatCard;
+// New 2026-08-20 (roadmap.md Phase 4, GDD §6.9): a Seed converts 1 unit of a
+// planted Habitat Slot's Fruit output to this color. Drafted from both the
+// Draft Booster and the Environment Interlude Booster, like any other card.
+// One-time plant, no replanting (tournament/environment.ts enforces this by
+// removing a planted Seed from the player's pool of plantable Seeds).
+// NOTE: Fruit itself is tracked as a single pooled number, not per-color
+// (GDD §4.4's splash tax was decided 2026-08-20 to be color-agnostic) — so a
+// planted Seed's `color` is flavor/display only for now (it changes what a
+// Habitat Slot visibly produces, per GDD §6.9's worked examples) and doesn't
+// change the total Fruit a trigger generates. Only Habitat star level does.
+export interface SeedCard extends CardBase {
+  type: 'seed';
+  color: StatColor;
+}
+
+export type Card =
+  | BondCard
+  | RegimenCard
+  | TechniqueCard
+  | TraitCard
+  | ItemCard
+  | HabitatCard
+  | SeedCard;
 
 // ---------------------------------------------------------------------------
 // Chao

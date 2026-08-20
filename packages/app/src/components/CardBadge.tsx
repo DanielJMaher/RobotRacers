@@ -54,6 +54,8 @@ function describeCard(card: Card): string {
       return 'Item';
     case 'habitat':
       return `+${card.fruitPerRound} Fruit/round`;
+    case 'seed':
+      return `Plants into a ${card.color} Habitat`;
     default: {
       const _exhaustive: never = card;
       return _exhaustive;

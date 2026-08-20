@@ -16,3 +16,5 @@ export * from './events/race';
 export * from './tournament/entrants';
 export * from './tournament/fieldRace';
 export * from './tournament/bracket';
+export * from './tournament/environment';
+export * from './tournament/interlude';

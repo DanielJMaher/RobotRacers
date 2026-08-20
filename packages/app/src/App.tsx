@@ -1,7 +1,10 @@
 import './App.css';
 import { DraftScreen } from './components/DraftScreen';
+import { EnvironmentPanel } from './components/EnvironmentPanel';
 import { EventLogPanel } from './components/EventLogPanel';
 import { GardenScreen } from './components/GardenScreen';
+import { HabitatPlacementScreen } from './components/HabitatPlacementScreen';
+import { InterludeBoosterScreen } from './components/InterludeBoosterScreen';
 import { TournamentPanel } from './components/TournamentPanel';
 import { useGame } from './game/useGame';
 
@@ -27,7 +30,23 @@ export function App() {
         />
       )}
 
-      {game.phase === 'tournament' && game.chao && game.tournament && (
+      {game.phase === 'habitat_placement' && game.environment && (
+        <HabitatPlacementScreen
+          environment={game.environment}
+          onPlace={game.placeHabitatCard}
+          onContinue={game.continueToTournament}
+        />
+      )}
+
+      {game.phase === 'interlude' && game.interludeDraft && game.interludeRound && (
+        <InterludeBoosterScreen
+          interlude={game.interludeDraft}
+          round={game.interludeRound}
+          onPick={game.pickInterludeCard}
+        />
+      )}
+
+      {game.phase === 'tournament' && game.chao && game.tournament && game.environment && (
         <div className="tournament-layout">
           <GardenScreen
             chao={game.chao}
@@ -37,6 +56,7 @@ export function App() {
             onConsumeRegimen={game.consumeRegimenCard}
             onToggleTechnique={game.toggleTechnique}
           />
+          <EnvironmentPanel environment={game.environment} onPlantSeed={game.plantSeed} />
           <TournamentPanel
             tournament={game.tournament}
             loadedTechniqueCount={game.selectedTechniqueIds.size}
