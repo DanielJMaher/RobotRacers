@@ -20,15 +20,17 @@ Not a playable milestone; sets up the structure everything else builds on.
 
 The smallest loop that proves the *core swap* (feeding → drafting) actually feels good, deliberately with no run-map and no multi-Chao board yet.
 
-- [ ] Draft engine: open a single 15-card pack against N bot seats, pick, pass, resolve 3 packs (architecture.md §6).
-- [ ] Bonding UI: apply a drafted card to a single Chao's slot, see the stat/body change.
-- [ ] Race Leg resolver + Karate Bout resolver (architecture.md §5.2–5.3), each runnable standalone against the one Chao.
-- [ ] Event-log playback UI for both (architecture.md §5.1) — this is the piece most directly answering the "does auto-resolution feel earned" design risk (GDD §10), so it should be treated as core scope, not polish.
-- [ ] Minimal Garden Board view (even static art is fine) so bonding has a visual payoff.
+- [x] Draft engine: open a single 15-card pack against N bot seats, pick, pass, resolve 3 packs (architecture.md §6). `packages/sim/src/draft/` — `pool.ts` (pack generation, sampling-with-replacement, a guaranteed bonus Habitat per pack mirroring MTG's land slot), `bots.ts` (the documented rawPower/affinity/tag-synergy scoring heuristic), `engine.ts` (the tick-by-tick pass-and-pick state machine, direction alternating each round). 26 unit/integration tests including a full-draft determinism check.
+- [x] Bonding UI: apply a drafted card to a single Chao's slot, see the stat/body change. `packages/app/src/components/GardenScreen.tsx` — clicking a Bond Card calls `bondCard` and the slot list re-renders with the new card + body mutation immediately; confirmed live in a Playwright-driven browser pass (see below).
+- [x] Race Leg resolver + Karate Bout resolver (architecture.md §5.2–5.3), each runnable standalone against the one Chao. `packages/sim/src/events/race.ts` and `bout.ts`, sharing a trigger-matching/effect-execution core in `shared.ts` (`collectTriggerables`, `applyEffectOps`, `fireTriggers`) exactly as architecture.md §5.3 calls for. 23 tests across both resolvers plus the shared module.
+- [x] Event-log playback UI for both (architecture.md §5.1). `packages/app/src/game/narration.ts` maps every `SimEvent` to a readable line (with a compile-time exhaustiveness guard so a future event kind can't silently go unnarrated); the Garden screen's Event Log panel renders the growing list live.
+- [x] Minimal Garden Board view (even static art is fine) so bonding has a visual payoff. Folded into `GardenScreen.tsx` rather than a separate screen — stats, alignment, color identity, evolution stage, and all 4 Bond Slots (with body-mutation text) are visible at all times while bonding decisions are made, which is also where the payoff is most legible.
 
-**Done when:** a playtester can draft ~10 cards, bond several onto one Chao, run it through a Race and a Bout, and read back *why* it won or lost from the event log — without needing any run/map/economy systems to exist yet.
+**Done when:** a playtester can draft ~10 cards, bond several onto one Chao, run it through a Race and a Bout, and read back *why* it won or lost from the event log — without needing any run/map/economy systems to exist yet. **✅ Met** — `pnpm build`/`typecheck`/`test` all pass (62 sim tests total), and a full Playwright-driven pass through all 45 draft picks → bonding → Race → Bout confirmed correct behavior and legible narration with zero console/page errors.
 
-**Explicit non-goals for this phase:** map/node graph, Fruit economy, multiple Chao, alignment/evolution, reincarnation. All deferred to later phases on purpose — Phase 1 is scoped to test the draft-and-bond loop in isolation.
+**Two real bugs found and fixed during implementation** (not left as known issues): the Race resolver's shortcut-fork logic was checking the wrong stat for the shortcut leg itself (GDD §6.2 — both the "do you take the shortcut" check and the shortcut leg itself should use the fork's Fly/Swim stat, not the leg's normal stat; only the non-shortcut path should use the normal stat); and `meadowFawn`'s "Graze — regen 1 Stamina between legs" keyword had been authored as a permanent `modifyStat` in Phase 0, which would have inflated the base stat forever instead of regenerating in-race HP — fixed by adding a distinct `restoreStamina` EffectOp. Both are documented inline where fixed and in `data-schemas.md`.
+
+**Explicit non-goals for this phase (unchanged):** map/node graph, Fruit economy, multiple Chao, reincarnation, evolution-stage *advancement* (the field exists and is displayed, but no trigger ever moves a Chao from stage 0 → 1 → 2 yet — that's the Act 1/Act 2 boss logic in Phase 2). Alignment computation was already built in Phase 0 (`recomputeDerived`) and is simply now visible in the Garden screen — it was never actually out of scope, just not yet surfaced in a UI.
 
 ## Phase 2 — Run structure
 

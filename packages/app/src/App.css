@@ -1,0 +1,144 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #12141a;
+  color: #e6e6e6;
+}
+
+.app {
+  font-family: system-ui, sans-serif;
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.subtitle {
+  color: #9aa0ab;
+  margin-top: -0.5rem;
+}
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.card-badge {
+  width: 150px;
+  min-height: 110px;
+  text-align: left;
+  background: #1c1f27;
+  color: #e6e6e6;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-badge:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.card-badge:not(:disabled):hover {
+  background: #262b36;
+}
+
+.card-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.card-badge-rarity {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #9aa0ab;
+}
+
+.card-badge-desc {
+  font-size: 0.8rem;
+  color: #c7ccd6;
+}
+
+.garden {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.garden-column {
+  min-width: 0;
+}
+
+.stat-table {
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+
+.stat-table td {
+  padding: 0.15rem 0.75rem 0.15rem 0;
+  border-bottom: 1px solid #2a2e38;
+}
+
+.slot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.slot-list li {
+  padding: 0.15rem 0;
+  border-bottom: 1px solid #2a2e38;
+}
+
+.event-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.event-buttons button {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a2e38;
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.event-buttons button:hover {
+  background: #363c4a;
+}
+
+.log-column {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.event-log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.event-log li {
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid #2a2e38;
+}

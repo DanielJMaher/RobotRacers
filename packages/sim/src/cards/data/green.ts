@@ -41,8 +41,11 @@ export const meadowFawn: BondCard = {
   speciesTags: ['beast'],
   bodyMutation: 'fawn_spots',
   keyword: {
+    // "Graze — regen 1 Stamina between legs" (card-set-list.md): restores
+    // the in-race HP pool, not a permanent stat increase — see the
+    // restoreStamina EffectOp doc comment in types.ts.
     trigger: { on: 'leg_start' },
-    apply: [{ op: 'modifyStat', stat: 'stamina', amount: 1 }],
+    apply: [{ op: 'restoreStamina', amount: 1 }],
   },
 };
 
@@ -212,6 +215,11 @@ export const bountifulHarvest: TechniqueCard = {
   energyCost: 2,
   scope: 'race',
   exileOnUse: true,
+  // card-set-list.md's flavor text says "for every Leg this Chao completes,
+  // win or lose" — the TriggerCondition vocabulary only has leg_won, not a
+  // neutral "leg attempted", so this fires on wins only. A minor
+  // simplification of the original flavor text rather than a full
+  // trigger-vocabulary expansion for one card.
   effect: {
     trigger: { on: 'leg_won' },
     apply: [{ op: 'grantFruit', amount: 1 }],

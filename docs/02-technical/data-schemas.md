@@ -114,6 +114,13 @@ interface StaticModifier {
 
 type EffectOp =
   | { op: "modifyStat"; stat: Stat; amount: number }
+  // Distinct from modifyStat: restores the in-the-moment currentStamina HP
+  // pool (clamped at the Chao's base stamina stat) rather than permanently
+  // raising that base stat. Added during Phase 1 after a real authoring bug:
+  // meadowFawn's "regen 1 Stamina between legs" keyword had been encoded as
+  // a permanent modifyStat, which would have inflated the base stat forever
+  // instead of regenerating in-race HP.
+  | { op: "restoreStamina"; amount: number }
   | { op: "grantFruit"; amount: number }
   | { op: "preventDamage"; amount: number | "all" }
   | { op: "forceEvade" }
@@ -183,14 +190,21 @@ interface DraftSeat {
   pool: Card[];
 }
 
+// REFINEMENT vs. an earlier draft of this doc: the original packs/round/
+// packSize/packsPerDraft shape was too under-specified to actually drive a
+// tick-by-tick engine (no in-round pick counter, no distinction between
+// "packs currently in front of each seat" and pack size as a fixed config
+// value). packages/sim/src/draft/engine.ts is the reference implementation.
 interface DraftState {
-  seed: number;
-  packs: Card[][];                 // one array per seat, mutated as picks/passes happen
+  seed: number;                     // provenance only — the live Rng is threaded through calls, never re-derived from this field
   seats: DraftSeat[];
-  round: number;                    // which pick number we're on
-  packSize: 15;
-  packsPerDraft: 3;
-  direction: "left" | "right";      // alternates per pack, standard MTG draft convention
+  currentRound: number;             // 0-based, < packsPerDraft
+  currentPick: number;               // 0-based tick within the current round, < packSize
+  packsPerDraft: number;             // 3, standard MTG draft convention
+  packSize: number;                  // spell cards only — the bonus Habitat card isn't part of what circulates
+  packsInFront: Card[][];            // index i = the pack currently in front of seat i; empty between rounds
+  direction: "left" | "right";      // this round's pass direction — alternates each round
+  isComplete: boolean;
 }
 ```
 
@@ -256,6 +270,10 @@ type SimEvent =
   | { type: "dnf"; chaoId: string }
   | { type: "technique_fired"; cardId: string; chaoId: string }
   | { type: "trait_fired"; cardId: string; chaoId: string }
+  // Added during Phase 1: Bond Card keywords fire during resolution exactly
+  // like Traits and Techniques (they share the same TriggeredEffect shape),
+  // but trait_fired doesn't fit since a Bond keyword isn't a Trait Card.
+  | { type: "keyword_fired"; cardId: string; chaoId: string }
   | { type: "fruit_gained"; amount: number; reason: string };
 
 interface ResolutionResult {

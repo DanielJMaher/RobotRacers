@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRng, rollInRange } from './index';
+import { createRng, pickRandom, rollInRange } from './index';
 
 describe('createRng', () => {
   it('is deterministic for a given seed', () => {
@@ -47,5 +47,29 @@ describe('rollInRange', () => {
   it('throws if max is less than min', () => {
     const rng = createRng(1);
     expect(() => rollInRange(rng, 10, 5)).toThrow();
+  });
+});
+
+describe('pickRandom', () => {
+  it('only ever returns elements from the array', () => {
+    const rng = createRng(55);
+    const options = ['a', 'b', 'c'];
+    for (let i = 0; i < 100; i++) {
+      expect(options).toContain(pickRandom(options, rng));
+    }
+  });
+
+  it('is deterministic for a given seed', () => {
+    const options = [1, 2, 3, 4, 5];
+    const a = createRng(8);
+    const b = createRng(8);
+    const picksA = Array.from({ length: 10 }, () => pickRandom(options, a));
+    const picksB = Array.from({ length: 10 }, () => pickRandom(options, b));
+    expect(picksA).toEqual(picksB);
+  });
+
+  it('throws on an empty array', () => {
+    const rng = createRng(1);
+    expect(() => pickRandom([], rng)).toThrow();
   });
 });

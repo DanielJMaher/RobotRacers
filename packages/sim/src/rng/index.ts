@@ -24,3 +24,16 @@ export function rollInRange(rng: Rng, min: number, max: number): number {
   }
   return min + Math.floor(rng() * (max - min + 1));
 }
+
+// Picks a uniformly random element from a non-empty array — used for pack
+// generation (draft/pool.ts) and anywhere else sampling-with-replacement is
+// needed. The non-null assertion is safe: `index` is always < arr.length by
+// construction, so `arr[index]` can never actually be undefined here even
+// though noUncheckedIndexedAccess can't prove that itself.
+export function pickRandom<T>(arr: readonly T[], rng: Rng): T {
+  if (arr.length === 0) {
+    throw new Error('pickRandom: cannot pick from an empty array');
+  }
+  const index = Math.floor(rng() * arr.length);
+  return arr[index]!;
+}
