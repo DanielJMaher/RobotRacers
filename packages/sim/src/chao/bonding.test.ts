@@ -6,18 +6,18 @@ import { bondCard, computeSplashTax, consumeRegimen } from './bonding';
 import { createChao } from './factory';
 
 describe('createChao', () => {
-  it('starts with zero stats, no slots, and neutral alignment', () => {
+  it('starts with zero stats, no bonded cards, and neutral alignment', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     expect(chao.stats.stamina).toBe(0);
     expect(chao.stats.run).toBe(0);
-    expect(chao.bondSlots).toEqual({});
+    expect(chao.bondedCards).toEqual([]);
     expect(chao.colorIdentity).toEqual([]);
     expect(chao.alignment).toBe('neutral');
   });
 });
 
 describe('bondCard', () => {
-  it("grants stats within the card's roll range and occupies the slot", () => {
+  it("grants stats within the card's roll range and appends to the bonding history", () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(42);
 
@@ -27,7 +27,8 @@ describe('bondCard', () => {
     expect(bonded.stats.stamina).toBeLessThanOrEqual(10);
     expect(bonded.stats.run).toBeGreaterThanOrEqual(2);
     expect(bonded.stats.run).toBeLessThanOrEqual(4);
-    expect(bonded.bondSlots.feet?.card.id).toBe(brambleHare.id);
+    expect(bonded.bondedCards).toHaveLength(1);
+    expect(bonded.bondedCards[0]?.card.id).toBe(brambleHare.id);
     expect(bonded.speciesTagCounts.rabbit).toBe(1);
     expect(events.filter((e) => e.type === 'grade_roll')).toHaveLength(2);
   });
@@ -42,32 +43,32 @@ describe('bondCard', () => {
     expect(bonded.alignmentValue).toBeGreaterThan(0);
   });
 
-  it('replaces the previous card in an occupied slot, fully reversing its stats and tags', () => {
+  it('accumulates onto a second bonded card instead of replacing the first (corrected 2026-08-20)', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(7);
 
-    const afterFirst = bondCard(chao, brambleHare, rng); // feet: +stamina, +run, rabbit tag, green
-    const afterSecond = bondCard(afterFirst.chao, skitterFinch, rng); // feet: +run only, bird tag, red
+    const afterFirst = bondCard(chao, brambleHare, rng); // legs: +stamina, +run, rabbit tag, green
+    const afterSecond = bondCard(afterFirst.chao, skitterFinch, rng); // legs: +run, bird tag, red
 
-    expect(afterSecond.chao.bondSlots.feet?.card.id).toBe(skitterFinch.id);
-    expect(afterSecond.replacedCard?.id).toBe(brambleHare.id);
+    expect(afterSecond.chao.bondedCards).toHaveLength(2);
+    expect(afterSecond.chao.bondedCards[0]?.card.id).toBe(brambleHare.id);
+    expect(afterSecond.chao.bondedCards[1]?.card.id).toBe(skitterFinch.id);
 
-    // brambleHare's stamina contribution is fully gone — nothing else grants stamina here.
-    expect(afterSecond.chao.stats.stamina).toBe(0);
-    // Its rabbit tag is gone too.
-    expect(afterSecond.chao.speciesTagCounts.rabbit).toBeUndefined();
-    // The bird tag from the new card is present.
+    // brambleHare's stamina contribution is still present — bonding no longer reverses it.
+    expect(afterSecond.chao.stats.stamina).toBeGreaterThanOrEqual(6);
+    // Both species tags are present now.
+    expect(afterSecond.chao.speciesTagCounts.rabbit).toBe(1);
     expect(afterSecond.chao.speciesTagCounts.bird).toBe(1);
-    // Color identity has swapped from green to red (only one slot is bonded).
-    expect(afterSecond.chao.colorIdentity).toEqual(['red']);
+    // Color identity now includes both colors — nothing is overwritten.
+    expect(afterSecond.chao.colorIdentity).toEqual(['green', 'red']);
   });
 
-  it('nets toward Neutral alignment when Green and Red are balanced across different slots', () => {
+  it('nets toward Neutral alignment when Green and Red are balanced across different regions', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(99);
 
-    const afterGreen = bondCard(chao, brambleHare, rng); // feet slot, green
-    const afterRed = bondCard(afterGreen.chao, jackrabbitReflex, rng); // head slot, red
+    const afterGreen = bondCard(chao, brambleHare, rng); // legs region, green
+    const afterRed = bondCard(afterGreen.chao, jackrabbitReflex, rng); // head region, red
 
     expect(afterRed.chao.colorIdentity).toEqual(['green', 'red']);
     expect(afterRed.chao.alignmentValue).toBe(0);
@@ -77,7 +78,7 @@ describe('bondCard', () => {
   it('accumulates multiple stat grants from a two-stat Bond Card', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(13);
-    const { chao: bonded } = bondCard(chao, hollowLogDen, rng); // +stamina, +swim, back slot
+    const { chao: bonded } = bondCard(chao, hollowLogDen, rng); // +stamina, +swim, back region
 
     expect(bonded.stats.stamina).toBeGreaterThanOrEqual(12);
     expect(bonded.stats.swim).toBeGreaterThanOrEqual(4);
@@ -87,7 +88,7 @@ describe('bondCard', () => {
 });
 
 describe('consumeRegimen', () => {
-  it('grants a permanent flat stat with no slot, tag, or identity change', () => {
+  it('grants a permanent flat stat with no bonded card, tag, or identity change', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(3);
 
@@ -95,7 +96,7 @@ describe('consumeRegimen', () => {
 
     expect(fed.stats.stamina).toBeGreaterThanOrEqual(10);
     expect(fed.stats.stamina).toBeLessThanOrEqual(14);
-    expect(fed.bondSlots).toEqual({});
+    expect(fed.bondedCards).toEqual([]);
     expect(fed.colorIdentity).toEqual([]); // Regimen is consumed, not "attached" — GDD §3.3
     expect(fed.speciesTagCounts).toEqual({});
     expect(events).toHaveLength(1);

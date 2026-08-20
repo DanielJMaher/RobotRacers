@@ -38,7 +38,12 @@ function formatStatGrant(grant: { stat: string; min: number; max: number }): str
 function describeCard(card: Card): string {
   switch (card.type) {
     case 'bond':
-      return `${card.slot} · ${card.statGrants.map(formatStatGrant).join(', ')}`;
+      // Each grant carries its own region now (a card can touch several) —
+      // GDD §3.5, corrected 2026-08-20 — so the region is shown per-grant
+      // rather than once for the whole card.
+      return card.statGrants
+        .map((grant) => `${grant.region ?? '?'} ${formatStatGrant(grant)}`)
+        .join(', ');
     case 'regimen':
       return card.statGrants.map(formatStatGrant).join(', ');
     case 'technique':

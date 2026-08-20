@@ -4,9 +4,14 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // Source: docs/01-design/card-set-list.md
 //
 // Same convention as green.ts/red.ts: `custom` EffectOps mark keyword text
-// that doesn't map to an existing typed op yet — the Race/Bout resolvers
-// fire and log these, with no mechanical effect, until a future pass gives
-// them real semantics.
+// that doesn't map to an existing typed op yet — the Race resolver fires and
+// logs these, with no mechanical effect, until a future pass gives them
+// real semantics.
+//
+// Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
+// model: `slot` -> per-grant `region` (hands->arms here), `bodyMutation:
+// string` -> `bodyMutations: {region: string}`. Mechanical schema migration
+// only — see green.ts's header note for the full rationale.
 
 export const snappingTurtle: BondCard = {
   id: 'bond.snapping_turtle',
@@ -14,10 +19,9 @@ export const snappingTurtle: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'power', min: 7, max: 11 }],
+  statGrants: [{ stat: 'power', min: 7, max: 11, region: 'arms' }],
   speciesTags: ['reptile'],
-  bodyMutation: 'heavy_jaw',
+  bodyMutations: { arms: 'heavy_jaw' },
 };
 
 export const ironHideBoar: BondCard = {
@@ -26,10 +30,9 @@ export const ironHideBoar: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'power', min: 8, max: 12 }],
+  statGrants: [{ stat: 'power', min: 8, max: 12, region: 'arms' }],
   speciesTags: ['beast'],
-  bodyMutation: 'iron_hide',
+  bodyMutations: { arms: 'iron_hide' },
   keyword: {
     // Bulldoze: direct match to the existing autoWinLeg op, same pattern as
     // dustdashLizard's Bolt (red.ts).
@@ -45,13 +48,12 @@ export const stagBeetlePincer: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
   statGrants: [
-    { stat: 'power', min: 6, max: 10 },
-    { stat: 'stamina', min: 2, max: 4 },
+    { stat: 'power', min: 6, max: 10, region: 'arms' },
+    { stat: 'stamina', min: 2, max: 4, region: 'arms' },
   ],
   speciesTags: ['insect'],
-  bodyMutation: 'mandibles',
+  bodyMutations: { arms: 'mandibles' },
 };
 
 export const crushblowTonic: RegimenCard = {
@@ -101,10 +103,9 @@ export const warthogTusks: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'power', min: 13, max: 18 }],
+  statGrants: [{ stat: 'power', min: 13, max: 18, region: 'arms' }],
   speciesTags: ['beast'],
-  bodyMutation: 'tusks',
+  bodyMutations: { arms: 'tusks' },
   keyword: {
     trigger: { on: 'on_hit', as: 'attacker' },
     apply: [{ op: 'custom', description: "Knockback+: on hit, delays the defender's next action." }],
@@ -132,10 +133,9 @@ export const ramsCharge: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
-  slot: 'head',
-  statGrants: [{ stat: 'power', min: 10, max: 14 }],
+  statGrants: [{ stat: 'power', min: 10, max: 14, region: 'head' }],
   speciesTags: ['beast'],
-  bodyMutation: 'curled_horns',
+  bodyMutations: { head: 'curled_horns' },
   keyword: {
     trigger: { on: 'bout_start' },
     apply: [{ op: 'custom', description: 'Charge: deals bonus damage on the opening action of a Bout.' }],
@@ -148,10 +148,9 @@ export const obsidianClaw: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'power', min: 17, max: 23 }],
+  statGrants: [{ stat: 'power', min: 17, max: 23, region: 'arms' }],
   speciesTags: ['beast'],
-  bodyMutation: 'obsidian_claws',
+  bodyMutations: { arms: 'obsidian_claws' },
   keyword: {
     trigger: { on: 'on_hit', as: 'attacker' },
     apply: [
@@ -203,10 +202,9 @@ export const warlordsFang: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'power', min: 26, max: 34 }],
+  statGrants: [{ stat: 'power', min: 26, max: 34, region: 'arms' }],
   speciesTags: ['beast'],
-  bodyMutation: 'dark_fang_plating',
+  bodyMutations: { arms: 'dark_fang_plating' },
   keyword: {
     trigger: { on: 'on_hit', as: 'attacker' },
     apply: [
@@ -246,13 +244,12 @@ export const boulderRam: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
   statGrants: [
-    { stat: 'power', min: 6, max: 9 },
-    { stat: 'climb', min: 4, max: 7 },
+    { stat: 'power', min: 6, max: 9, region: 'arms' },
+    { stat: 'climb', min: 4, max: 7, region: 'arms' },
   ],
   speciesTags: ['beast'],
-  bodyMutation: 'reinforced_shoulders',
+  bodyMutations: { arms: 'reinforced_shoulders' },
 };
 
 export const sheerFaceCrawler: BondCard = {
@@ -261,10 +258,9 @@ export const sheerFaceCrawler: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
-  slot: 'hands',
-  statGrants: [{ stat: 'climb', min: 10, max: 15 }],
+  statGrants: [{ stat: 'climb', min: 10, max: 15, region: 'arms' }],
   speciesTags: ['insect'],
-  bodyMutation: 'gripping_claws',
+  bodyMutations: { arms: 'gripping_claws' },
   keyword: {
     // Direct match: autoWinLeg gated to Climb legs, same pattern as
     // dustdashLizard's Bolt (red.ts) and otterPaddle's Current Rider (white.ts).

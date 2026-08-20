@@ -2,6 +2,14 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 
 // "Core Garden" example set — Green (Stamina) cards.
 // Source: docs/01-design/card-set-list.md
+//
+// Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
+// model: `slot` -> per-grant `region` (feet->legs, hands->arms, head/back
+// unchanged), `bodyMutation: string` -> `bodyMutations: {region: string}`.
+// This is a mechanical schema migration, not a content redesign — these
+// cards still grant only positive stats from a single region each. Giving
+// them the full multi-region mixed-sign "Penguin" treatment is a tracked
+// content follow-up (roadmap.md), not done here.
 
 export const packleafTortoise: BondCard = {
   id: 'bond.packleaf_tortoise',
@@ -9,10 +17,9 @@ export const packleafTortoise: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
-  slot: 'feet',
-  statGrants: [{ stat: 'stamina', min: 8, max: 12 }],
+  statGrants: [{ stat: 'stamina', min: 8, max: 12, region: 'legs' }],
   speciesTags: ['reptile'],
-  bodyMutation: 'shell',
+  bodyMutations: { legs: 'shell' },
 };
 
 export const brambleHare: BondCard = {
@@ -21,13 +28,12 @@ export const brambleHare: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
-  slot: 'feet',
   statGrants: [
-    { stat: 'stamina', min: 6, max: 10 },
-    { stat: 'run', min: 2, max: 4 },
+    { stat: 'stamina', min: 6, max: 10, region: 'legs' },
+    { stat: 'run', min: 2, max: 4, region: 'legs' },
   ],
   speciesTags: ['rabbit'],
-  bodyMutation: 'long_ears',
+  bodyMutations: { legs: 'long_ears' },
 };
 
 export const meadowFawn: BondCard = {
@@ -36,10 +42,9 @@ export const meadowFawn: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
-  slot: 'back',
-  statGrants: [{ stat: 'stamina', min: 7, max: 11 }],
+  statGrants: [{ stat: 'stamina', min: 7, max: 11, region: 'back' }],
   speciesTags: ['beast'],
-  bodyMutation: 'fawn_spots',
+  bodyMutations: { back: 'fawn_spots' },
   keyword: {
     // "Graze — regen 1 Stamina between legs" (card-set-list.md): restores
     // the in-race HP pool, not a permanent stat increase — see the
@@ -91,10 +96,9 @@ export const oldGrowth: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'green',
-  slot: 'back',
-  statGrants: [{ stat: 'stamina', min: 14, max: 20 }],
+  statGrants: [{ stat: 'stamina', min: 14, max: 20, region: 'back' }],
   speciesTags: ['beast'],
-  bodyMutation: 'bark_patches',
+  bodyMutations: { back: 'bark_patches' },
   keyword: {
     trigger: { on: 'manual' },
     apply: [
@@ -125,13 +129,12 @@ export const hollowLogDen: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'green',
-  slot: 'back',
   statGrants: [
-    { stat: 'stamina', min: 12, max: 16 },
-    { stat: 'swim', min: 4, max: 6 },
+    { stat: 'stamina', min: 12, max: 16, region: 'back' },
+    { stat: 'swim', min: 4, max: 6, region: 'back' },
   ],
   speciesTags: ['reptile', 'beast'],
-  bodyMutation: 'mossy_shell_plates',
+  bodyMutations: { back: 'mossy_shell_plates' },
 };
 
 export const evergreenWarden: BondCard = {
@@ -140,10 +143,9 @@ export const evergreenWarden: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'green',
-  slot: 'feet',
-  statGrants: [{ stat: 'stamina', min: 18, max: 24 }],
+  statGrants: [{ stat: 'stamina', min: 18, max: 24, region: 'legs' }],
   speciesTags: ['beast'],
-  bodyMutation: 'root_boots',
+  bodyMutations: { legs: 'root_boots' },
   keyword: {
     trigger: { on: 'bout_start' },
     apply: [
@@ -190,10 +192,9 @@ export const thousandYearChaoOak: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'green',
-  slot: 'back',
-  statGrants: [{ stat: 'stamina', min: 28, max: 36 }],
+  statGrants: [{ stat: 'stamina', min: 28, max: 36, region: 'back' }],
   speciesTags: ['beast', 'reptile'],
-  bodyMutation: 'bark_plating_canopy',
+  bodyMutations: { back: 'bark_plating_canopy' },
   keyword: {
     trigger: { on: 'manual' },
     apply: [

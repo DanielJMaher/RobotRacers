@@ -86,14 +86,13 @@ export function useGame() {
   const bondBondCard = useCallback(
     (card: BondCard) => {
       if (!chao) return;
-      const { chao: bonded, events, replacedCard } = bondCardOnChao(chao, card, rngRef.current);
+      const { chao: bonded, events } = bondCardOnChao(chao, card, rngRef.current);
       setChao(bonded);
-      appendLog([
-        replacedCard
-          ? `${card.name} replaces ${replacedCard.name} in the ${card.slot} slot.`
-          : `${card.name} bonds into the ${card.slot} slot.`,
-        ...events.map(narrateSimEvent),
-      ]);
+      // Bonding is cumulative now (GDD §3.5, corrected 2026-08-20) — this
+      // always adds, never replaces, so the log just names the touched
+      // regions rather than talking about a slot being occupied/replaced.
+      const regions = Object.keys(card.bodyMutations).join(', ');
+      appendLog([`${card.name} bonds onto ${regions}.`, ...events.map(narrateSimEvent)]);
     },
     [chao, appendLog],
   );

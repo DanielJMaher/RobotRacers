@@ -8,6 +8,11 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // describes a DRAFT-time or meta-progression effect (peeking extra cards,
 // reincarnation math) that no current trigger/resolver models at all — see
 // the inline notes on Cloudsight Tonic and Tidewatcher's Eye.
+//
+// Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
+// model: `slot` -> per-grant `region` (all Back here, unchanged name),
+// `bodyMutation: string` -> `bodyMutations: {region: string}`. Mechanical
+// schema migration only — see green.ts's header note for the full rationale.
 
 export const dartingSparrow: BondCard = {
   id: 'bond.darting_sparrow',
@@ -15,10 +20,9 @@ export const dartingSparrow: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
-  statGrants: [{ stat: 'fly', min: 7, max: 11 }],
+  statGrants: [{ stat: 'fly', min: 7, max: 11, region: 'back' }],
   speciesTags: ['bird'],
-  bodyMutation: 'small_wings',
+  bodyMutations: { back: 'small_wings' },
 };
 
 export const glassfinGuppy: BondCard = {
@@ -27,10 +31,9 @@ export const glassfinGuppy: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
-  statGrants: [{ stat: 'fly', min: 6, max: 10 }],
+  statGrants: [{ stat: 'fly', min: 6, max: 10, region: 'back' }],
   speciesTags: ['fish'],
-  bodyMutation: 'glass_fins',
+  bodyMutations: { back: 'glass_fins' },
   keyword: {
     trigger: { on: 'bout_start' },
     apply: [{ op: 'custom', description: 'Slipstream: +10% Evasion vs. the first hit each Bout.' }],
@@ -43,13 +46,12 @@ export const paperKiteMoth: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
   statGrants: [
-    { stat: 'fly', min: 8, max: 12 },
-    { stat: 'mind', min: 1, max: 1 },
+    { stat: 'fly', min: 8, max: 12, region: 'back' },
+    { stat: 'mind', min: 1, max: 1, region: 'back' },
   ],
   speciesTags: ['insect'],
-  bodyMutation: 'patterned_wings',
+  bodyMutations: { back: 'patterned_wings' },
 };
 
 export const windcatcherDraught: RegimenCard = {
@@ -85,11 +87,11 @@ export const feint: TechniqueCard = {
   energyCost: 1,
   exileOnUse: false,
   effect: {
-    // Direct match to the existing forceEvade op. NOTE: bout.ts's evasion
-    // roll doesn't yet read controlOps to honor a forced dodge (only
-    // autoWinLeg/autoResolveDNF are consumed today, both by race.ts) — this
-    // fires and logs like a custom op would, until the Bout resolver is
-    // extended to consume forceEvade/forceHit/preventDamage from controlOps.
+    // Direct match to the existing forceEvade op. NOTE: the Race resolver
+    // doesn't read controlOps to honor a forced dodge (there's no
+    // evasion/dodge concept in a Race at all — that was Bout-specific,
+    // GDD's 2026-08-20 revision note) — this fires and logs like a custom
+    // op would, dormant pending a Race-relevant reflavor.
     trigger: { on: 'round_start' },
     apply: [{ op: 'forceEvade' }],
     onceLimit: 'per_round',
@@ -102,10 +104,9 @@ export const hummingbirdDash: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
-  statGrants: [{ stat: 'fly', min: 13, max: 18 }],
+  statGrants: [{ stat: 'fly', min: 13, max: 18, region: 'back' }],
   speciesTags: ['bird'],
-  bodyMutation: 'blurred_wings',
+  bodyMutations: { back: 'blurred_wings' },
   keyword: {
     trigger: { on: 'leg_start', legType: 'water' },
     apply: [
@@ -126,7 +127,7 @@ export const tidewatchersEye: TraitCard = {
   color: 'blue',
   // A draft-time effect ("look at 2 extra cards before picking") — no
   // TriggerCondition variant represents a draft pack-open event at all
-  // (every trigger kind here is Race/Bout-scoped). 'manual' is used as the
+  // (every trigger kind here is Race-scoped). 'manual' is used as the
   // least-wrong placeholder; this has no engine hook today.
   effect: {
     trigger: { on: 'manual' },
@@ -146,13 +147,12 @@ export const riptideMinnow: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
   statGrants: [
-    { stat: 'fly', min: 11, max: 15 },
-    { stat: 'swim', min: 3, max: 5 },
+    { stat: 'fly', min: 11, max: 15, region: 'back' },
+    { stat: 'swim', min: 3, max: 5, region: 'back' },
   ],
   speciesTags: ['fish'],
-  bodyMutation: 'fin_crest',
+  bodyMutations: { back: 'fin_crest' },
 };
 
 export const stormpetrelWing: BondCard = {
@@ -161,16 +161,14 @@ export const stormpetrelWing: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
-  statGrants: [{ stat: 'fly', min: 17, max: 23 }],
+  statGrants: [{ stat: 'fly', min: 17, max: 23, region: 'back' }],
   speciesTags: ['bird'],
-  bodyMutation: 'storm_feathers',
+  bodyMutations: { back: 'storm_feathers' },
   keyword: {
     // "Doubled vs. Power-type attackers specifically" needs to know the
     // attacker's identity at evasion-calc time, which no current trigger
-    // exposes (evasion is computed once per action in bout.ts, independent
-    // of any per-attacker trigger check) — custom, attached at bout_start
-    // as a stand-in for "this passive is active this Bout."
+    // exposes — custom, attached at bout_start as a stand-in for "this
+    // passive is active" (dormant now that Bout itself is removed).
     trigger: { on: 'bout_start' },
     apply: [
       { op: 'custom', description: 'Evasive Mastery: Evasion chance doubled vs. Power-type attackers.' },
@@ -213,10 +211,9 @@ export const skydancerFirstOfFlight: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'blue',
-  slot: 'back',
-  statGrants: [{ stat: 'fly', min: 28, max: 36 }],
+  statGrants: [{ stat: 'fly', min: 28, max: 36, region: 'back' }],
   speciesTags: ['bird'],
-  bodyMutation: 'iridescent_wings_trailing_feathers',
+  bodyMutations: { back: 'iridescent_wings_trailing_feathers' },
   keyword: {
     // Direct match: autoWinLeg gated to Air legs specifically.
     trigger: { on: 'leg_start', legType: 'air' },

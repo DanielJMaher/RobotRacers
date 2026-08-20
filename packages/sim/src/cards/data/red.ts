@@ -2,6 +2,12 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 
 // "Core Garden" example set — Red (Run) cards.
 // Source: docs/01-design/card-set-list.md
+//
+// Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
+// model: `slot` -> per-grant `region` (feet->legs, hands->arms, head/back
+// unchanged), `bodyMutation: string` -> `bodyMutations: {region: string}`.
+// This is a mechanical schema migration, not a content redesign — see
+// green.ts's header note for the full rationale.
 
 export const skitterFinch: BondCard = {
   id: 'bond.skitter_finch',
@@ -9,10 +15,9 @@ export const skitterFinch: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
-  statGrants: [{ stat: 'run', min: 7, max: 11 }],
+  statGrants: [{ stat: 'run', min: 7, max: 11, region: 'legs' }],
   speciesTags: ['bird'],
-  bodyMutation: 'quick_tap_feet',
+  bodyMutations: { legs: 'quick_tap_feet' },
 };
 
 export const dustdashLizard: BondCard = {
@@ -21,10 +26,9 @@ export const dustdashLizard: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
-  statGrants: [{ stat: 'run', min: 8, max: 12 }],
+  statGrants: [{ stat: 'run', min: 8, max: 12, region: 'legs' }],
   speciesTags: ['reptile'],
-  bodyMutation: 'sprinting_legs',
+  bodyMutations: { legs: 'sprinting_legs' },
   keyword: {
     trigger: { on: 'leg_start', legType: 'sprint' },
     apply: [{ op: 'autoWinLeg' }],
@@ -38,13 +42,12 @@ export const firecrackerBeetle: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'red',
-  slot: 'hands',
   statGrants: [
-    { stat: 'run', min: 6, max: 9 },
-    { stat: 'power', min: 2, max: 4 },
+    { stat: 'run', min: 6, max: 9, region: 'arms' },
+    { stat: 'power', min: 2, max: 4, region: 'arms' },
   ],
   speciesTags: ['insect'],
-  bodyMutation: 'bright_wing_case',
+  bodyMutations: { arms: 'bright_wing_case' },
 };
 
 export const quickstepDraught: RegimenCard = {
@@ -91,10 +94,9 @@ export const cinderSprinter: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
-  statGrants: [{ stat: 'run', min: 13, max: 18 }],
+  statGrants: [{ stat: 'run', min: 13, max: 18, region: 'legs' }],
   speciesTags: ['beast'],
-  bodyMutation: 'ember_trail_paws',
+  bodyMutations: { legs: 'ember_trail_paws' },
   keyword: {
     trigger: { on: 'race_start' },
     apply: [
@@ -131,10 +133,9 @@ export const jackrabbitReflex: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'red',
-  slot: 'head',
-  statGrants: [{ stat: 'run', min: 10, max: 14 }],
+  statGrants: [{ stat: 'run', min: 10, max: 14, region: 'head' }],
   speciesTags: ['rabbit'],
-  bodyMutation: 'alert_long_ears',
+  bodyMutations: { head: 'alert_long_ears' },
   keyword: {
     trigger: { on: 'bout_start' },
     apply: [
@@ -149,13 +150,12 @@ export const blazingCometWing: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'red',
-  slot: 'back',
   statGrants: [
-    { stat: 'run', min: 16, max: 22 },
-    { stat: 'fly', min: 4, max: 6 },
+    { stat: 'run', min: 16, max: 22, region: 'back' },
+    { stat: 'fly', min: 4, max: 6, region: 'back' },
   ],
   speciesTags: ['bird'],
-  bodyMutation: 'trailing_sparks',
+  bodyMutations: { back: 'trailing_sparks' },
 };
 
 export const falseStart: TechniqueCard = {
@@ -193,10 +193,9 @@ export const sonicBoomSprinter: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
-  statGrants: [{ stat: 'run', min: 24, max: 32 }],
+  statGrants: [{ stat: 'run', min: 24, max: 32, region: 'legs' }],
   speciesTags: ['beast'],
-  bodyMutation: 'motion_blur_streaks',
+  bodyMutations: { legs: 'motion_blur_streaks' },
   keyword: {
     trigger: { on: 'race_start' },
     apply: [
@@ -238,13 +237,12 @@ export const springHeelHare: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
   statGrants: [
-    { stat: 'run', min: 6, max: 9 },
-    { stat: 'jump', min: 4, max: 7 },
+    { stat: 'run', min: 6, max: 9, region: 'legs' },
+    { stat: 'jump', min: 4, max: 7, region: 'legs' },
   ],
   speciesTags: ['rabbit'],
-  bodyMutation: 'coiled_leg_muscles',
+  bodyMutations: { legs: 'coiled_leg_muscles' },
 };
 
 export const cliffhopperGoat: BondCard = {
@@ -253,13 +251,10 @@ export const cliffhopperGoat: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'red',
-  slot: 'feet',
-  statGrants: [{ stat: 'jump', min: 10, max: 15 }],
+  statGrants: [{ stat: 'jump', min: 10, max: 15, region: 'legs' }],
   speciesTags: ['beast'],
-  bodyMutation: 'spring_loaded_hooves',
+  bodyMutations: { legs: 'spring_loaded_hooves' },
   keyword: {
-    // Direct match: autoWinLeg gated to Jump legs, same pattern as
-    // dustdashLizard's Bolt above.
     trigger: { on: 'leg_start', legType: 'jump' },
     apply: [{ op: 'autoWinLeg' }],
     onceLimit: 'per_race',

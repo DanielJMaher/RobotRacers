@@ -25,10 +25,9 @@ function makeBondCard(overrides: Partial<BondCard> = {}): BondCard {
     rarity: 'common',
     type: 'bond',
     color: 'green',
-    slot: 'feet',
-    statGrants: [{ stat: 'stamina', min: 5, max: 5 }],
+    statGrants: [{ stat: 'stamina', min: 5, max: 5, region: 'legs' }],
     speciesTags: ['beast'],
-    bodyMutation: 'test',
+    bodyMutations: { legs: 'test' },
     ...overrides,
   };
 }

@@ -142,3 +142,20 @@ body {
   padding: 0.2rem 0.4rem;
   border-bottom: 1px solid #2a2e38;
 }
+
+.bonding-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.bonding-history-list li {
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid #2a2e38;
+}

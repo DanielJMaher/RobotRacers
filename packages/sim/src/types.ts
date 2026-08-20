@@ -17,7 +17,13 @@ export type Stat = 'swim' | 'fly' | 'run' | 'power' | 'stamina' | 'mind' | 'luck
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
-export type BondSlot = 'head' | 'back' | 'hands' | 'feet';
+// Renamed from BondSlot 2026-08-20 (GDD §3.5, corrected): these were
+// originally 4 exclusive slots (one card each, replacing on rebond). They're
+// now accumulation buckets a card's stat grants can be tagged with — any
+// number of cards can touch the same region. 5 regions, locked: the
+// original 4 (head/back/hands/feet) become head/back/arms/legs, plus a new
+// torso region. `hands`→`arms` and `feet`→`legs` are renames, not new ideas.
+export type BodyRegion = 'legs' | 'arms' | 'back' | 'head' | 'torso';
 
 export type SpeciesTag = 'rabbit' | 'bird' | 'fish' | 'reptile' | 'insect' | 'beast' | 'dragon';
 
@@ -63,6 +69,21 @@ export type EffectOp =
   | { op: 'forceHit' }
   | { op: 'autoWinLeg' }
   | { op: 'autoResolveDNF'; result: 'safe' }
+  // Added 2026-08-20 (GDD §3.5): a special-traversal/shortcut mechanic for
+  // creature-flavored cards (e.g. "Elephant walks the riverbed instead of
+  // swimming") — deliberately separate from the existing Fly/Swim fork
+  // threshold check (race.ts's LegFork) rather than an extension of it, so a
+  // card can grant a wholly different way to clear a Leg. `legType` reuses
+  // the same inlined leg-type union as `leg_start`'s above rather than
+  // importing LegType from events/race.ts, for the same reason noted there
+  // (types.ts is foundational; race.ts depends on it, not the reverse).
+  // Field shape is a first-draft placeholder — not yet consumed by any
+  // resolver, same status as forceEvade/preventDamage/forceHit above.
+  | {
+      op: 'grantAlternateRoute';
+      legType: 'sprint' | 'obstacle' | 'climb' | 'jump' | 'water' | 'air';
+      description: string;
+    }
   // Phase 0 escape hatch: several keyword effects in the example card set
   // (e.g. "Rooted", "Overclock", "Unshakeable") don't map cleanly onto the
   // primitives above yet. Real execution semantics are a resolver concern —
@@ -103,17 +124,30 @@ export interface CardBase {
 
 export interface StatGrant {
   stat: Stat;
-  min: number; // grade-roll floor, GDD §4.3
-  max: number; // grade-roll ceiling
+  min: number; // grade-roll floor, GDD §4.3 — CAN be negative (GDD §3.5: a
+  // card can carry drawbacks; negatives are always smaller in magnitude
+  // than a card's positives, an authoring rule, not a type-level constraint)
+  max: number; // grade-roll ceiling — can also be negative, if min is too
+  region?: BodyRegion; // which Body Region this grant is tagged to (GDD
+  // §3.5). Set on BondCard grants; omitted on RegimenCard grants, which
+  // have no body/cosmetic effect at all (GDD §4.2 — "no slot... deliberately
+  // 'just numbers'"). Optional rather than required because of that split.
 }
 
 export interface BondCard extends CardBase {
   type: 'bond';
-  slot: BondSlot;
-  statGrants: StatGrant[]; // usually 1, sometimes 2 (a primary + minor stat)
+  // No single `slot` field anymore (GDD §3.5, corrected 2026-08-20) — a
+  // card can touch multiple Body Regions at once; each StatGrant carries
+  // its own region tag instead. Bonding is cumulative and unbounded: any
+  // number of Bond Cards can be bonded over a Chao's life, all stacking,
+  // never replacing (see Chao.bondedCards below).
+  statGrants: StatGrant[]; // 1+ grants, each independently regioned and signed
   speciesTags: SpeciesTag[]; // 1-2 tags, GDD §5.5
   keyword?: KeywordEffect;
-  bodyMutation: string; // asset/animation key for the cosmetic change
+  // One cosmetic mutation per Body Region this card touches — replaces the
+  // old single `bodyMutation: string` field, since one card can now affect
+  // several regions at once (GDD §3.5's Penguin example: Legs, Arms, Back).
+  bodyMutations: Partial<Record<BodyRegion, string>>;
 }
 
 export interface RegimenCard extends CardBase {
@@ -158,15 +192,13 @@ export type Card = BondCard | RegimenCard | TechniqueCard | TraitCard | ItemCard
 // Chao
 // ---------------------------------------------------------------------------
 
-// REFINEMENT vs. data-schemas.md: that doc originally had `Chao.bondSlots`
-// hold a bare `BondCard`. That's not enough to reverse a slot's contribution
-// when it gets overwritten (GDD §3.5), because grade rolls are randomized per
-// bond (GDD §4.3) — two Chao bonding "the same" card can gain different
-// amounts. A BondedCard pairs the static card with the specific roll it got
-// this time, so un-bonding is exact subtraction, not a re-roll or a guess.
+// A BondedCard pairs the static card with the specific rolled amount it got
+// this time — needed because grade rolls are randomized per bond (GDD §4.3),
+// so two Chao bonding "the same" card can gain different amounts.
 export interface RolledStatGrant {
   stat: Stat;
-  amount: number;
+  amount: number; // can be negative — see StatGrant's doc comment
+  region?: BodyRegion; // carried through from the StatGrant this was rolled from
 }
 
 export interface BondedCard {
@@ -180,7 +212,13 @@ export interface Chao {
   bornGeneration: number; // which run created it (for reincarnation lineage)
 
   stats: Record<Stat, number>;
-  bondSlots: Partial<Record<BondSlot, BondedCard>>;
+  // REPLACES the old `bondSlots: Partial<Record<BondSlot, BondedCard>>`
+  // (GDD §3.5, corrected 2026-08-20). That was a 4-slot exclusive record —
+  // bonding a new card into an occupied slot deleted the old one, which was
+  // simply wrong: any number of Bond Cards can be bonded over a Chao's
+  // life, and every one keeps contributing. This is that full, append-only
+  // history — nothing is ever removed from it.
+  bondedCards: BondedCard[];
   traits: TraitCard[]; // max 2, GDD §3.5 / §4.2
   items: ItemCard[]; // freely re-equippable, not slot-limited the same way
 
@@ -188,6 +226,14 @@ export interface Chao {
   colorIdentity: StatColor[]; // derived from bonded card colors, GDD §4.4
   alignment: Alignment; // derived, GDD §3.3
   alignmentValue: number; // -1..1 raw slider, for UI/debug
+  // NEW 2026-08-20 (GDD §3.5): per-region cosmetic look, derived — for each
+  // Body Region, whichever Species Tag has the most accumulated
+  // contributions to that region "wins," and this holds that tag's
+  // bodyMutation string. Discrete top-contributor-wins, not a rendered
+  // blend (decided 2026-08-20 — a true blend needs a production art
+  // pipeline that isn't being built). Absent regions have no bonded
+  // contribution yet.
+  regionLooks: Partial<Record<BodyRegion, string>>;
 
   evolutionStage: 0 | 1 | 2; // 0=unevolved, 1=first (alignment-based), 2=second (color-based)
 

@@ -31,9 +31,14 @@ export interface Triggerable {
 // share it too.
 export function collectTriggerables(chao: Chao, loadedTechniques: TechniqueCard[]): Triggerable[] {
   const triggerables: Triggerable[] = [];
-  for (const bonded of Object.values(chao.bondSlots)) {
-    if (bonded?.card.keyword) {
-      triggerables.push({ source: 'bond', cardId: bonded.card.id, effect: bonded.card.keyword });
+  // Bonding is cumulative now (GDD §3.5, corrected 2026-08-20) — the same
+  // keyword-bearing card bonded multiple times (5 Penguins) contributes its
+  // keyword 5 separate times here, and fires 5 separate times when its
+  // trigger matches. That's intentional, not a dedup bug: it matches the
+  // "stacking intensifies everything, not just raw stats" philosophy.
+  for (const { card } of chao.bondedCards) {
+    if (card.keyword) {
+      triggerables.push({ source: 'bond', cardId: card.id, effect: card.keyword });
     }
   }
   for (const trait of chao.traits) {

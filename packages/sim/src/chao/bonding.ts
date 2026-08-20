@@ -1,19 +1,13 @@
 import type { Rng } from '../rng';
 import { rollInRange } from '../rng';
-import type {
-  BondCard,
-  BondedCard,
-  Chao,
-  RegimenCard,
-  RolledStatGrant,
-  SimEvent,
-} from '../types';
+import type { BondCard, BondedCard, Chao, RegimenCard, RolledStatGrant, SimEvent } from '../types';
 import { recomputeDerived } from './derived';
 
 export interface BondResult {
   chao: Chao;
   events: SimEvent[];
-  replacedCard: BondCard | null;
+  // No `replacedCard` anymore (GDD §3.5, corrected 2026-08-20) — bonding is
+  // cumulative now; nothing is ever replaced, so there's nothing to report.
 }
 
 function rollStatGrants(
@@ -24,27 +18,28 @@ function rollStatGrants(
   const events: SimEvent[] = [];
   for (const grant of card.statGrants) {
     const amount = rollInRange(rng, grant.min, grant.max);
-    rolled.push({ stat: grant.stat, amount });
+    // exactOptionalPropertyTypes: only include `region` when the grant
+    // actually has one — passing `region: undefined` explicitly is a
+    // different (rejected) thing from omitting the property entirely.
+    rolled.push(
+      grant.region === undefined
+        ? { stat: grant.stat, amount }
+        : { stat: grant.stat, amount, region: grant.region },
+    );
     events.push({ type: 'grade_roll', cardId: card.id, stat: grant.stat, roll: amount });
   }
   return { rolled, events };
 }
 
-// Bonds a Bond Card into its slot (GDD §3.5, §4.2). If the slot is already
-// occupied, the previous card's stat contribution and species tags are fully
-// reversed first — bonding over a slot REPLACES, it does not stack, matching
-// the source material's "feed a different animal type, lose the old look"
-// tension (docs/00-research/chao-garden-research.md §2).
+// Bonds a Bond Card onto the Chao (GDD §3.5, corrected 2026-08-20). Any
+// number of Bond Cards can be bonded over a Chao's lifetime — this simply
+// rolls the new card's grants (each independently signed and Body-Region-
+// tagged) and appends them to the accumulated history. Nothing is ever
+// reversed or replaced: an earlier version of this function checked for an
+// "occupied slot" and subtracted the previous card's contribution first,
+// which was the wrong model entirely (see the GDD's revision note).
 export function bondCard(chao: Chao, card: BondCard, rng: Rng): BondResult {
-  const previous = chao.bondSlots[card.slot] ?? null;
-
   const stats = { ...chao.stats };
-  if (previous) {
-    for (const grant of previous.rolledGrants) {
-      stats[grant.stat] -= grant.amount;
-    }
-  }
-
   const { rolled, events } = rollStatGrants(card, rng);
   for (const grant of rolled) {
     stats[grant.stat] += grant.amount;
@@ -54,13 +49,12 @@ export function bondCard(chao: Chao, card: BondCard, rng: Rng): BondResult {
   const nextChao: Chao = {
     ...chao,
     stats,
-    bondSlots: { ...chao.bondSlots, [card.slot]: bondedCard },
+    bondedCards: [...chao.bondedCards, bondedCard],
   };
 
   return {
     chao: recomputeDerived(nextChao),
     events,
-    replacedCard: previous?.card ?? null,
   };
 }
 

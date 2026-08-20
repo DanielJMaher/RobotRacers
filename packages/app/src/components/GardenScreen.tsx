@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { BondCard, Card, Chao, RegimenCard, Stat, TechniqueCard } from '@chao-draft/sim';
+import type { BodyRegion, BondCard, Card, Chao, RegimenCard, Stat, TechniqueCard } from '@chao-draft/sim';
 import { CardBadge } from './CardBadge';
 
 interface GardenScreenProps {
@@ -11,7 +11,10 @@ interface GardenScreenProps {
   onRunRace: (loadedTechniques: TechniqueCard[]) => void;
 }
 
-const SLOT_ORDER = ['head', 'back', 'hands', 'feet'] as const;
+// Locked 5-region set (GDD §3.5, corrected 2026-08-20) — replaces the old
+// 4-slot list. Bonding is cumulative now, so this drives a per-region "look"
+// summary and a bonding-history list instead of a slot grid.
+const REGION_ORDER: BodyRegion[] = ['legs', 'arms', 'back', 'head', 'torso'];
 const STAT_ORDER: Stat[] = [
   'swim',
   'fly',
@@ -72,17 +75,22 @@ export function GardenScreen({
           </tbody>
         </table>
 
-        <h3>Bond Slots</h3>
+        <h3>Body Regions</h3>
         <ul className="slot-list">
-          {SLOT_ORDER.map((slot) => {
-            const bonded = chao.bondSlots[slot];
-            return (
-              <li key={slot}>
-                <strong>{slot}:</strong>{' '}
-                {bonded ? `${bonded.card.name} (${bonded.card.bodyMutation})` : 'empty'}
-              </li>
-            );
-          })}
+          {REGION_ORDER.map((region) => (
+            <li key={region}>
+              <strong>{region}:</strong> {chao.regionLooks[region] ?? 'unmarked'}
+            </li>
+          ))}
+        </ul>
+
+        <h3>Bonding History ({chao.bondedCards.length})</h3>
+        <ul className="bonding-history-list">
+          {chao.bondedCards.map((bonded, index) => (
+            <li key={`${bonded.card.id}-${index}`}>
+              {bonded.card.name} → {Object.keys(bonded.card.bodyMutations).join(', ')}
+            </li>
+          ))}
         </ul>
 
         <div className="event-buttons">

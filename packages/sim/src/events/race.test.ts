@@ -91,10 +91,10 @@ describe('resolveRace', () => {
 
   it("applies a Bond Card keyword's restoreStamina during the race (Graze)", () => {
     const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
-    const { chao: withFawn } = bondCard(base, meadowFawn, createRng(9)); // attaches the Graze keyword (back slot)
+    const { chao: withFawn } = bondCard(base, meadowFawn, createRng(9)); // attaches the Graze keyword (back region)
     // Stamina is pinned to a fixed value after bonding purely so the
     // arithmetic below is exact regardless of the bond's random grade roll —
-    // bondSlots (what the keyword actually reads from) is untouched by this.
+    // bondedCards (what the keyword actually reads from) is untouched by this.
     const chao = { ...withFawn, stats: { ...withFawn.stats, run: 50, stamina: 100 } };
     const config: RaceConfig = {
       legs: [

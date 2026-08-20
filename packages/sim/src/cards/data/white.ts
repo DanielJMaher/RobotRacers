@@ -7,6 +7,11 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // gaps worth flagging individually: Tidepool Tonic's Happiness bonus (not a
 // Stat) and Guardian's Oath, which is fundamentally a multi-Chao board
 // mechanic with no meaning until Phase 3's board exists — see their notes.
+//
+// Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
+// model: `slot` -> per-grant `region` (feet->legs, back unchanged),
+// `bodyMutation: string` -> `bodyMutations: {region: string}`. Mechanical
+// schema migration only — see green.ts's header note for the full rationale.
 
 export const koiPondElder: BondCard = {
   id: 'bond.koi_pond_elder',
@@ -14,10 +19,9 @@ export const koiPondElder: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'white',
-  slot: 'back',
-  statGrants: [{ stat: 'swim', min: 7, max: 11 }],
+  statGrants: [{ stat: 'swim', min: 7, max: 11, region: 'back' }],
   speciesTags: ['fish'],
-  bodyMutation: 'trailing_fins',
+  bodyMutations: { back: 'trailing_fins' },
 };
 
 export const harborSealPup: BondCard = {
@@ -26,10 +30,9 @@ export const harborSealPup: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'white',
-  slot: 'back',
-  statGrants: [{ stat: 'swim', min: 8, max: 12 }],
+  statGrants: [{ stat: 'swim', min: 8, max: 12, region: 'back' }],
   speciesTags: ['beast'],
-  bodyMutation: 'seal_flippers',
+  bodyMutations: { back: 'seal_flippers' },
   keyword: {
     // Reduces a Water leg's staminaCost — no EffectOp targets a Leg's cost
     // directly (that's a race.ts-local config value, not Chao state).
@@ -44,13 +47,12 @@ export const reedCrane: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'white',
-  slot: 'feet',
   statGrants: [
-    { stat: 'swim', min: 6, max: 10 },
-    { stat: 'fly', min: 2, max: 4 },
+    { stat: 'swim', min: 6, max: 10, region: 'legs' },
+    { stat: 'fly', min: 2, max: 4, region: 'legs' },
   ],
   speciesTags: ['bird'],
-  bodyMutation: 'long_legs',
+  bodyMutations: { legs: 'long_legs' },
 };
 
 export const clearwaterDraught: RegimenCard = {
@@ -98,15 +100,13 @@ export const coralTurtleShell: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'white',
-  slot: 'back',
-  statGrants: [{ stat: 'swim', min: 13, max: 18 }],
+  statGrants: [{ stat: 'swim', min: 13, max: 18, region: 'back' }],
   speciesTags: ['reptile'],
-  bodyMutation: 'coral_shell',
+  bodyMutations: { back: 'coral_shell' },
   keyword: {
     // Direct match: preventDamage 'all' for the first round each Bout.
-    // NOTE: same caveat as Feint (blue.ts) — bout.ts doesn't yet consume
-    // preventDamage from controlOps, so this fires and logs without
-    // mechanically zeroing damage until that wiring exists.
+    // NOTE: same caveat as Feint (blue.ts) — Bout itself is now removed, so
+    // this fires and logs with no mechanically live consumer.
     trigger: { on: 'round_start' },
     apply: [{ op: 'preventDamage', amount: 'all' }],
     onceLimit: 'per_bout',
@@ -139,10 +139,9 @@ export const otterPaddle: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'white',
-  slot: 'feet',
-  statGrants: [{ stat: 'swim', min: 11, max: 15 }],
+  statGrants: [{ stat: 'swim', min: 11, max: 15, region: 'legs' }],
   speciesTags: ['beast'],
-  bodyMutation: 'webbed_paws',
+  bodyMutations: { legs: 'webbed_paws' },
   keyword: {
     // Direct match: autoWinLeg gated to Water legs.
     trigger: { on: 'leg_start', legType: 'water' },
@@ -157,10 +156,9 @@ export const leviathansScale: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'white',
-  slot: 'back',
-  statGrants: [{ stat: 'swim', min: 17, max: 23 }],
+  statGrants: [{ stat: 'swim', min: 17, max: 23, region: 'back' }],
   speciesTags: ['fish'],
-  bodyMutation: 'ancient_scales',
+  bodyMutations: { back: 'ancient_scales' },
   keyword: {
     trigger: { on: 'bout_start' },
     apply: [
@@ -217,10 +215,9 @@ export const ninefoldTideTheUnbroken: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'white',
-  slot: 'back',
-  statGrants: [{ stat: 'swim', min: 28, max: 36 }],
+  statGrants: [{ stat: 'swim', min: 28, max: 36, region: 'back' }],
   speciesTags: ['fish', 'reptile'],
-  bodyMutation: 'layered_scale_armor_calm_expression',
+  bodyMutations: { back: 'layered_scale_armor_calm_expression' },
   keyword: {
     trigger: { on: 'on_hit', as: 'defender' },
     apply: [
