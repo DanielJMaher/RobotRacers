@@ -9,11 +9,20 @@ interface GardenScreenProps {
   onBondCard: (card: BondCard) => void;
   onConsumeRegimen: (card: RegimenCard) => void;
   onRunRace: (loadedTechniques: TechniqueCard[]) => void;
-  onRunBout: (loadedTechniques: TechniqueCard[]) => void;
 }
 
 const SLOT_ORDER = ['head', 'back', 'hands', 'feet'] as const;
-const STAT_ORDER: Stat[] = ['swim', 'fly', 'run', 'power', 'stamina', 'mind', 'luck'];
+const STAT_ORDER: Stat[] = [
+  'swim',
+  'fly',
+  'run',
+  'power',
+  'climb',
+  'jump',
+  'stamina',
+  'mind',
+  'luck',
+];
 
 export function GardenScreen({
   chao,
@@ -22,7 +31,6 @@ export function GardenScreen({
   onBondCard,
   onConsumeRegimen,
   onRunRace,
-  onRunBout,
 }: GardenScreenProps) {
   const [selectedTechniqueIds, setSelectedTechniqueIds] = useState<Set<string>>(new Set());
 
@@ -80,9 +88,6 @@ export function GardenScreen({
         <div className="event-buttons">
           <button type="button" onClick={() => onRunRace(loadedTechniques)}>
             Run a Race
-          </button>
-          <button type="button" onClick={() => onRunBout(loadedTechniques)}>
-            Run a Karate Bout
           </button>
         </div>
       </div>

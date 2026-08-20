@@ -12,5 +12,4 @@ export * from './draft/pool';
 export * from './draft/bots';
 export * from './draft/engine';
 export * from './events/shared';
-export * from './events/bout';
 export * from './events/race';

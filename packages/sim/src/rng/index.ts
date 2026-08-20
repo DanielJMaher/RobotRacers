@@ -37,3 +37,17 @@ export function pickRandom<T>(arr: readonly T[], rng: Rng): T {
   const index = Math.floor(rng() * arr.length);
   return arr[index]!;
 }
+
+// Fisher-Yates shuffle, returning a new array (the input is never mutated).
+// Added 2026-08-20 for race course generation (events/race.ts), but generic
+// enough for any future use.
+export function shuffle<T>(arr: readonly T[], rng: Rng): T[] {
+  const result = arr.slice();
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const temp = result[i]!;
+    result[i] = result[j]!;
+    result[j] = temp;
+  }
+  return result;
+}

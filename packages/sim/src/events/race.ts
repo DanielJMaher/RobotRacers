@@ -1,17 +1,33 @@
 import type { Rng } from '../rng';
-import { rollInRange } from '../rng';
+import { pickRandom, rollInRange, shuffle } from '../rng';
 import type { Chao, SimEvent, Stat, TechniqueCard, TriggerCondition } from '../types';
 import { fireTriggers, resetCurrentStamina } from './shared';
 
-export type LegType = 'start' | 'sprint' | 'obstacle' | 'water' | 'air';
+// Climb and Jump added 2026-08-20 (roadmap.md Phase 2, GDD §5.1) — genuinely
+// new dedicated stats, sitting ALONGSIDE Obstacle/Sprint rather than
+// replacing them. Obstacle still checks Power, Climb checks its own stat.
+export type LegType = 'start' | 'sprint' | 'obstacle' | 'climb' | 'jump' | 'water' | 'air';
 
 const LEG_STAT: Record<LegType, Stat> = {
   start: 'run',
   sprint: 'run',
   obstacle: 'power',
+  climb: 'climb',
+  jump: 'jump',
   water: 'swim',
   air: 'fly',
 };
+
+// The 6 "varied" leg types a generated course draws from, in addition to the
+// always-present Start leg (see generateRaceCourse below).
+const VARIABLE_LEG_TYPES: readonly LegType[] = [
+  'sprint',
+  'obstacle',
+  'climb',
+  'jump',
+  'water',
+  'air',
+];
 
 export interface LegFork {
   shortcutStat: 'fly' | 'swim'; // GDD §6.2: "a Fly or Swim threshold check"
@@ -28,6 +44,76 @@ export interface LegConfig {
 
 export interface RaceConfig {
   legs: LegConfig[];
+}
+
+// Course-generation placeholder ranges (roadmap.md Phase 2 — "Support 5-8
+// Legs per Race... with a validation/generation helper"). All tunable;
+// nothing here is playtested.
+const MIN_LEG_COUNT = 5;
+const MAX_LEG_COUNT = 8;
+const MIN_DISTINCT_LEG_TYPES = 3; // Start always counts as one of these
+const DIFFICULTY_MIN = 15;
+const DIFFICULTY_MAX = 30;
+const STAMINA_COST_MIN = 6;
+const STAMINA_COST_MAX = 12;
+const FORK_CHANCE = 0.4; // only Water/Air legs can fork, GDD §5.1
+const FORK_THRESHOLD_MIN = 15;
+const FORK_THRESHOLD_MAX = 25;
+const FORK_DIFFICULTY_MIN = 10;
+const FORK_DIFFICULTY_MAX = 20;
+
+function buildLeg(type: LegType, rng: Rng): LegConfig {
+  const difficulty = rollInRange(rng, DIFFICULTY_MIN, DIFFICULTY_MAX);
+  const staminaCost = rollInRange(rng, STAMINA_COST_MIN, STAMINA_COST_MAX);
+
+  const canFork = type === 'water' || type === 'air';
+  if (canFork && rng() < FORK_CHANCE) {
+    return {
+      type,
+      difficulty,
+      staminaCost,
+      fork: {
+        shortcutStat: type === 'water' ? 'swim' : 'fly',
+        shortcutThreshold: rollInRange(rng, FORK_THRESHOLD_MIN, FORK_THRESHOLD_MAX),
+        shortcutDifficulty: rollInRange(rng, FORK_DIFFICULTY_MIN, FORK_DIFFICULTY_MAX),
+      },
+    };
+  }
+  return { type, difficulty, staminaCost };
+}
+
+// Generates a randomized Race course (roadmap.md Phase 2): 5-8 Legs by
+// default, always opening with a Start leg, guaranteeing at least 3
+// distinct Leg types overall (Start counts as one) — assuming the normal
+// default leg count; an explicit `legCount` override below 3 can't satisfy
+// that guarantee and isn't expected to (a testing convenience, not a
+// contract violation).
+export function generateRaceCourse(rng: Rng, legCount?: number): RaceConfig {
+  const count = legCount ?? rollInRange(rng, MIN_LEG_COUNT, MAX_LEG_COUNT);
+
+  const additionalTypesNeeded = Math.max(
+    0,
+    Math.min(MIN_DISTINCT_LEG_TYPES - 1, count - 1, VARIABLE_LEG_TYPES.length),
+  );
+  const chosenTypes = shuffle(VARIABLE_LEG_TYPES, rng).slice(0, additionalTypesNeeded);
+
+  // Fill any remaining slots by sampling (with repetition) from the chosen
+  // types, so a course can repeat a type (e.g. two Sprint legs) without
+  // ever dropping below the guaranteed distinct-type minimum. Safe against
+  // an empty `chosenTypes`: that only happens when count === 1, in which
+  // case remainingCount is also 0, so pickRandom is never reached on it.
+  const remainingCount = count - 1 - chosenTypes.length;
+  const filledTypes = [
+    ...chosenTypes,
+    ...Array.from({ length: Math.max(0, remainingCount) }, () => pickRandom(chosenTypes, rng)),
+  ];
+
+  const legs: LegConfig[] = [
+    buildLeg('start', rng),
+    ...shuffle(filledTypes, rng).map((type) => buildLeg(type, rng)),
+  ];
+
+  return { legs };
 }
 
 // Flat +/- variance applied to a stat check, so leg outcomes aren't 100%

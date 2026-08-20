@@ -83,7 +83,6 @@ export const feint: TechniqueCard = {
   type: 'technique',
   color: 'blue',
   energyCost: 1,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     // Direct match to the existing forceEvade op. NOTE: bout.ts's evasion
@@ -186,7 +185,6 @@ export const readTheWind: TechniqueCard = {
   type: 'technique',
   color: 'blue',
   energyCost: 2,
-  scope: 'race',
   exileOnUse: false,
   effect: {
     trigger: { on: 'race_start' },
@@ -234,7 +232,6 @@ export const perfectRead: TechniqueCard = {
   type: 'technique',
   color: 'blue',
   energyCost: 3,
-  scope: 'bout',
   exileOnUse: true,
   effect: {
     trigger: { on: 'bout_start' },

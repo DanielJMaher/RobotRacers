@@ -34,17 +34,17 @@ Not a playable milestone; sets up the structure everything else builds on.
 
 **Everything below this line was rewritten 2026-08-20 to match the Tournament-bracket pivot.**
 
-## Phase 2 — Remove Bout, expand Race Legs
+## Phase 2 — Remove Bout, expand Race Legs *(complete, 2026-08-20)*
 
 Cleanup + the one Race-side mechanical change the new design needs before a bracket can be built on top of it.
 
-- [ ] Remove `packages/sim/src/events/bout.ts`, `bout.test.ts`, `packages/app/src/game/rival.ts`, and the "Run a Karate Bout" UI button/handler. Remove the now-meaningless `'bout'` value from `TechniqueCard.scope` (or collapse the field entirely if every Technique is Race-scoped now — worth a final check once the removal is done).
-- [ ] Add `climb` and `jump` to the `Stat` union in `types.ts` (**resolved 2026-08-20: these are real new stats, not reflavors of Power/Run** — GDD §3.1). Update `race.ts`'s `LEG_STAT` map with `obstacle→power`, `climb→climb`, `sprint→run`, `jump→jump` as four distinct entries (previously Climb/Jump didn't exist at all).
-- [ ] Support 5–8 Legs per Race (up from the current fixed-shape course), with a validation/generation helper that guarantees at least 3 distinct Leg types per course, now drawing from up to 7 types (start/sprint/obstacle/climb/jump/water/air).
-- [ ] Author a handful of Climb- and Jump-granting cards (proposed color mapping, GDD §3.2: Climb→Black, Jump→Red — flagged as an interpretation, not locked) so the new stats have at least some card support to test against.
-- [ ] Audit `packages/sim/src/cards/data/*.ts` for keywords/effects that only ever fire on now-dead Bout-only triggers (`bout_start`, `round_start`, `on_hit`, `on_dodge`) — GDD §4.2's content follow-up. Decide per-card: reflavor to a Race trigger, or leave dormant with a clear code comment (matching how `custom` ops are already documented) pending a real content pass.
+- [x] Removed `packages/sim/src/events/bout.ts`, `bout.test.ts`, `packages/app/src/game/rival.ts`, the "Run a Karate Bout" UI button/handler, and the now-meaningless `TechniqueCard.scope` field entirely (collapsed, not just emptied — every Technique is Race-scoped now). Also removed the dead `turn_order`/`hit`/`evasion_check` `SimEvent` variants (Bout's own output shape, unreferenced by any card data, unlike the dormant `TriggerCondition`/`EffectOp` variants which existing cards still author against).
+- [x] Added `climb` and `jump` to the `Stat` union in `types.ts` — real new stats, not reflavors. `race.ts`'s `LEG_STAT` map now has `obstacle→power`, `climb→climb`, `sprint→run`, `jump→jump` as four distinct entries, sitting alongside each other (Climb/Jump are additional Leg types, not replacements for Obstacle/Sprint).
+- [x] `generateRaceCourse(rng, legCount?)` in `race.ts`: 5–8 Legs by default, always opens with Start, guarantees ≥3 distinct Leg types (up to 7 available: start/sprint/obstacle/climb/jump/water/air), Water/Air legs fork ~40% of the time. Added `shuffle()` to `rng/index.ts` to support it. Wired into the live app (`useGame.ts`'s `runRace` now generates a fresh course per race instead of using a fixed demo course).
+- [x] Authored a handful of Climb (Black: Boulder Ram, Sheer Face Crawler, Quarry Grip Tonic) and Jump (Red: Spring-Heel Hare, Cliffhopper Goat, Bounding Draught) cards — proposed color mapping (Climb→Black, Jump→Red) per GDD §3.2, not locked.
+- [x] Card-data audit: Bout-only-triggered keywords/effects (`bout_start`/`round_start`/`on_hit`/`on_dodge`) are left dormant with the reasoning now documented centrally in `types.ts`'s `TriggerCondition`/`EffectOp` doc comments, rather than touching every individual card — they were already silently inert under the Race resolver (it never checks those trigger kinds), so no behavior changed, only the explanation of *why* that's intentional.
 
-**Done when:** `pnpm build`/`typecheck`/`test` all green with no Bout code remaining; a Race can be configured with 5–8 Legs across at least 3 types including Climb/Jump; the card-data audit is at least logged (even if not every card is fixed yet).
+**Done when:** ✅ Met — `pnpm build`/`typecheck`/`test` all green (72 sim tests, up from 68: -7 removed Bout tests, +11 new for `shuffle`/`generateRaceCourse`/Climb-Jump resolution), no Bout code remains anywhere, a live Playwright pass confirmed the "Run a Karate Bout" button is gone, multiple real races generated varied 5–8 leg courses (confirmed lengths 5/6/8 and Climb/Jump/Air/Water/Sprint/Obstacle all appearing across samples), and Jump/Climb legs resolve against their own dedicated stats (confirmed both via a targeted unit test and live in the browser) rather than Power/Run.
 
 ## Phase 3 — Tournament bracket core loop
 

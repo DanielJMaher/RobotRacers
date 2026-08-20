@@ -4,8 +4,8 @@ import { meadowFawn } from '../cards/data/green';
 import { bondCard } from '../chao/bonding';
 import { createChao } from '../chao/factory';
 import { createRng } from '../rng';
-import type { RaceConfig } from './race';
-import { resolveRace } from './race';
+import type { LegType, RaceConfig } from './race';
+import { generateRaceCourse, resolveRace } from './race';
 
 describe('resolveRace', () => {
   it('completes every leg when stats comfortably clear the difficulty curve', () => {
@@ -147,5 +147,80 @@ describe('resolveRace', () => {
     expect(resultA.finished).toBe(resultB.finished);
     expect(resultA.legsCompleted).toBe(resultB.legsCompleted);
     expect(resultA.events).toEqual(resultB.events);
+  });
+
+  it('resolves Climb and Jump legs against their own dedicated stats, not Power/Run', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    // High Power/Run but zero Climb/Jump — if Climb/Jump were reflavors of
+    // Power/Run these legs would trivially succeed; they should instead fail.
+    const chao = {
+      ...base,
+      stats: { ...base.stats, power: 100, run: 100, climb: 0, jump: 0, stamina: 100 },
+    };
+    const config: RaceConfig = {
+      legs: [
+        { type: 'climb', difficulty: 20, staminaCost: 5 },
+        { type: 'jump', difficulty: 20, staminaCost: 5 },
+      ],
+    };
+
+    const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
+
+    expect(result.legsCompleted).toBe(0);
+    expect(result.events.filter((e) => e.type === 'leg_result')).toEqual([
+      { type: 'leg_result', chaoId: 'c1', legType: 'climb', success: false },
+      { type: 'leg_result', chaoId: 'c1', legType: 'jump', success: false },
+    ]);
+  });
+});
+
+describe('generateRaceCourse', () => {
+  it('produces between 5 and 8 legs by default, starting with Start', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const course = generateRaceCourse(createRng(seed));
+      expect(course.legs.length).toBeGreaterThanOrEqual(5);
+      expect(course.legs.length).toBeLessThanOrEqual(8);
+      expect(course.legs[0]!.type).toBe('start');
+    }
+  });
+
+  it('always includes at least 3 distinct Leg types', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const course = generateRaceCourse(createRng(seed));
+      const distinctTypes = new Set(course.legs.map((leg) => leg.type));
+      expect(distinctTypes.size).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('only forks Water or Air legs, never others', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const course = generateRaceCourse(createRng(seed));
+      for (const leg of course.legs) {
+        if (leg.fork) {
+          expect(['water', 'air']).toContain(leg.type as LegType);
+        }
+      }
+    }
+  });
+
+  it('respects an explicit legCount override', () => {
+    const course = generateRaceCourse(createRng(5), 6);
+    expect(course.legs).toHaveLength(6);
+  });
+
+  it('is deterministic for a given seed', () => {
+    const a = generateRaceCourse(createRng(42));
+    const b = generateRaceCourse(createRng(42));
+    expect(a).toEqual(b);
+  });
+
+  it('produces a resolvable course (resolveRace runs without throwing)', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const chao = {
+      ...base,
+      stats: { ...base.stats, run: 20, power: 20, swim: 20, fly: 20, climb: 20, jump: 20, stamina: 80 },
+    };
+    const course = generateRaceCourse(createRng(3));
+    expect(() => resolveRace({ chao, loadedTechniques: [] }, course, createRng(4))).not.toThrow();
   });
 });

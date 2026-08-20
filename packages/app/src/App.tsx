@@ -10,8 +10,8 @@ export function App() {
     <main className="app">
       <h1>Chao Draft</h1>
       <p className="subtitle">
-        Phase 1 vertical slice — draft cards, bond them onto your Chao, then run a Race or Karate
-        Bout. See <code>docs/03-roadmap/roadmap.md</code> for scope.
+        Draft cards, bond them onto your Chao, then run a Race. See{' '}
+        <code>docs/03-roadmap/roadmap.md</code> for scope.
       </p>
 
       {game.phase === 'draft' && (
@@ -33,7 +33,6 @@ export function App() {
           onBondCard={game.bondBondCard}
           onConsumeRegimen={game.consumeRegimenCard}
           onRunRace={game.runRace}
-          onRunBout={game.runBout}
         />
       )}
     </main>

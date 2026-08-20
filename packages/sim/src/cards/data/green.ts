@@ -77,7 +77,6 @@ export const secondWind: TechniqueCard = {
   type: 'technique',
   color: 'green',
   energyCost: 1,
-  scope: 'race',
   exileOnUse: false,
   effect: {
     trigger: { on: 'manual' },
@@ -213,7 +212,6 @@ export const bountifulHarvest: TechniqueCard = {
   type: 'technique',
   color: 'green',
   energyCost: 2,
-  scope: 'race',
   exileOnUse: true,
   // card-set-list.md's flavor text says "for every Leg this Chao completes,
   // win or lose" — the TriggerCondition vocabulary only has leg_won, not a

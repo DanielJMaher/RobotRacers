@@ -85,7 +85,6 @@ export const heavyStrike: TechniqueCard = {
   type: 'technique',
   color: 'black',
   energyCost: 1,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     trigger: { on: 'round_start' },
@@ -168,7 +167,6 @@ export const sacrificialOffering: TechniqueCard = {
   type: 'technique',
   color: 'black',
   energyCost: 2,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     trigger: { on: 'manual' },
@@ -228,7 +226,6 @@ export const totalEclipse: TechniqueCard = {
   type: 'technique',
   color: 'black',
   energyCost: 3,
-  scope: 'bout',
   exileOnUse: true,
   effect: {
     trigger: { on: 'round_start' },
@@ -236,6 +233,54 @@ export const totalEclipse: TechniqueCard = {
       { op: 'custom', description: "This Bout: all of this Chao's actions this round ignore Evasion and Swim both." },
     ],
   },
+};
+
+// Climb cards, added 2026-08-20 (roadmap.md Phase 2) — Climb is a genuinely
+// new, dedicated Stat (GDD §3.1), proposed to live in Black as a secondary
+// stat lane alongside Power (GDD §3.2), same as some Bond Cards already
+// grant a primary + minor stat pair.
+
+export const boulderRam: BondCard = {
+  id: 'bond.boulder_ram',
+  name: 'Boulder Ram',
+  rarity: 'common',
+  type: 'bond',
+  color: 'black',
+  slot: 'hands',
+  statGrants: [
+    { stat: 'power', min: 6, max: 9 },
+    { stat: 'climb', min: 4, max: 7 },
+  ],
+  speciesTags: ['beast'],
+  bodyMutation: 'reinforced_shoulders',
+};
+
+export const sheerFaceCrawler: BondCard = {
+  id: 'bond.sheer_face_crawler',
+  name: 'Sheer Face Crawler',
+  rarity: 'uncommon',
+  type: 'bond',
+  color: 'black',
+  slot: 'hands',
+  statGrants: [{ stat: 'climb', min: 10, max: 15 }],
+  speciesTags: ['insect'],
+  bodyMutation: 'gripping_claws',
+  keyword: {
+    // Direct match: autoWinLeg gated to Climb legs, same pattern as
+    // dustdashLizard's Bolt (red.ts) and otterPaddle's Current Rider (white.ts).
+    trigger: { on: 'leg_start', legType: 'climb' },
+    apply: [{ op: 'autoWinLeg' }],
+    onceLimit: 'per_race',
+  },
+};
+
+export const quarryGripTonic: RegimenCard = {
+  id: 'regimen.quarry_grip_tonic',
+  name: 'Quarry Grip Tonic',
+  rarity: 'common',
+  type: 'regimen',
+  color: 'black',
+  statGrants: [{ stat: 'climb', min: 8, max: 12 }],
 };
 
 export const blackCards = [
@@ -253,4 +298,7 @@ export const blackCards = [
   bonebreakerInstinct,
   warlordsFang,
   totalEclipse,
+  boulderRam,
+  sheerFaceCrawler,
+  quarryGripTonic,
 ];

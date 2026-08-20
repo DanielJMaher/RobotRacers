@@ -82,7 +82,6 @@ export const guardStance: TechniqueCard = {
   type: 'technique',
   color: 'white',
   energyCost: 1,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     // "Half damage" is a multiplier, not a flat amount — preventDamage's
@@ -181,7 +180,6 @@ export const steadyHand: TechniqueCard = {
   type: 'technique',
   color: 'white',
   energyCost: 2,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     trigger: { on: 'round_start' },
@@ -243,7 +241,6 @@ export const perfectCalm: TechniqueCard = {
   type: 'technique',
   color: 'white',
   energyCost: 3,
-  scope: 'race',
   exileOnUse: true,
   effect: {
     trigger: { on: 'race_start' },

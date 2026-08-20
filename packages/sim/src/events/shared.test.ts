@@ -29,7 +29,6 @@ function makeTechnique(overrides: Partial<TechniqueCard> = {}): TechniqueCard {
     type: 'technique',
     color: 'red',
     energyCost: 1,
-    scope: 'bout',
     exileOnUse: false,
     effect: {
       trigger: { on: 'round_start' },

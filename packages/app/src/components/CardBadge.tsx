@@ -42,7 +42,7 @@ function describeCard(card: Card): string {
     case 'regimen':
       return card.statGrants.map(formatStatGrant).join(', ');
     case 'technique':
-      return `${card.scope} · ${card.energyCost} energy`;
+      return `${card.energyCost} energy`;
     case 'trait':
       return 'Trait';
     case 'item':

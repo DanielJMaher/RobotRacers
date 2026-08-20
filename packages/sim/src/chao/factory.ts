@@ -5,6 +5,8 @@ const ZERO_STATS: Record<Stat, number> = {
   fly: 0,
   run: 0,
   power: 0,
+  climb: 0,
+  jump: 0,
   stamina: 0,
   mind: 0,
   luck: 0,

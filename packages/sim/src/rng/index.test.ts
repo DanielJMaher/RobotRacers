@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRng, pickRandom, rollInRange } from './index';
+import { createRng, pickRandom, rollInRange, shuffle } from './index';
 
 describe('createRng', () => {
   it('is deterministic for a given seed', () => {
@@ -71,5 +71,37 @@ describe('pickRandom', () => {
   it('throws on an empty array', () => {
     const rng = createRng(1);
     expect(() => pickRandom([], rng)).toThrow();
+  });
+});
+
+describe('shuffle', () => {
+  it('returns an array with the same elements, in some order', () => {
+    const rng = createRng(11);
+    const input = [1, 2, 3, 4, 5];
+    const result = shuffle(input, rng);
+    expect(result).toHaveLength(input.length);
+    expect([...result].sort()).toEqual([...input].sort());
+  });
+
+  it('does not mutate the input array', () => {
+    const rng = createRng(11);
+    const input = [1, 2, 3, 4, 5];
+    const original = [...input];
+    shuffle(input, rng);
+    expect(input).toEqual(original);
+  });
+
+  it('is deterministic for a given seed', () => {
+    const input = [1, 2, 3, 4, 5, 6, 7, 8];
+    const a = shuffle(input, createRng(99));
+    const b = shuffle(input, createRng(99));
+    expect(a).toEqual(b);
+  });
+
+  it('produces a different order for a different seed (statistically)', () => {
+    const input = Array.from({ length: 10 }, (_, i) => i);
+    const a = shuffle(input, createRng(1));
+    const b = shuffle(input, createRng(2));
+    expect(a).not.toEqual(b);
   });
 });

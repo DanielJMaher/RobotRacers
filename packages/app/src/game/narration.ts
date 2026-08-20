@@ -1,20 +1,14 @@
 import type { DraftPickEvent, SimEvent } from '@chao-draft/sim';
 
 // Human-readable narration for the sim's event log — the UI's answer to the
-// "does auto-resolution feel earned" design risk (GDD §10): a Race/Bout
-// result should read as a small story, not a black-box number.
+// "does auto-resolution feel earned" design risk (GDD §8): a Race result
+// should read as a small story, not a black-box number. (Karate Bout was
+// removed 2026-08-20 — its own event kinds, turn_order/hit/evasion_check,
+// no longer exist in SimEvent at all, so there's nothing to narrate for them.)
 export function narrateSimEvent(event: SimEvent): string {
   switch (event.type) {
     case 'grade_roll':
       return `Rolled +${event.roll} ${event.stat} from ${event.cardId}.`;
-    case 'turn_order':
-      return `${event.chaoId} acts first this round (Run ${event.runStat}).`;
-    case 'hit':
-      return `${event.attackerId} hits ${event.defenderId} for ${event.damage} damage.`;
-    case 'evasion_check':
-      return event.result
-        ? `${event.chaoId} dodges! (roll ${event.roll.toFixed(2)} < ${event.threshold.toFixed(2)} evasion chance)`
-        : `${event.chaoId} fails to dodge (roll ${event.roll.toFixed(2)} ≥ ${event.threshold.toFixed(2)} evasion chance).`;
     case 'leg_result':
       return event.success
         ? `${event.chaoId} clears the ${event.legType} leg!`

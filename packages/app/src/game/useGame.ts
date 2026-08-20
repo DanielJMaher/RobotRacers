@@ -9,13 +9,11 @@ import {
   createChao,
   createDraft,
   createRng,
-  resolveBout,
+  generateRaceCourse,
   resolveRace,
   startRound,
 } from '@chao-draft/sim';
 import { narrateDraftPick, narrateSimEvent } from './narration';
-import { DEMO_RACE_COURSE } from './raceCourse';
-import { createRivalChao } from './rival';
 
 const CARD_POOL = buildCardPool(coreGardenSet);
 const SEAT_COUNT = 4;
@@ -113,37 +111,17 @@ export function useGame() {
   const runRace = useCallback(
     (loadedTechniques: TechniqueCard[]) => {
       if (!chao) return;
-      const result = resolveRace({ chao, loadedTechniques }, DEMO_RACE_COURSE, rngRef.current);
+      // A fresh 5-8 leg course (at least 3 distinct Leg types) is generated
+      // per race, per roadmap.md Phase 2 — no more fixed demo course.
+      const course = generateRaceCourse(rngRef.current);
+      const result = resolveRace({ chao, loadedTechniques }, course, rngRef.current);
       setChao(result.finalChao);
       appendLog([
-        '--- Race ---',
+        `--- Race (${course.legs.length} legs: ${course.legs.map((leg) => leg.type).join(', ')}) ---`,
         ...result.events.map(narrateSimEvent),
         result.finished
           ? `Finished all ${result.legsCompleted} legs!`
           : `DNF after ${result.legsCompleted} legs.`,
-      ]);
-    },
-    [chao, appendLog],
-  );
-
-  const runBout = useCallback(
-    (loadedTechniques: TechniqueCard[]) => {
-      if (!chao) return;
-      const rival = createRivalChao();
-      const result = resolveBout(
-        { chao, loadedTechniques },
-        { chao: rival, loadedTechniques: [] },
-        rngRef.current,
-      );
-      setChao(result.finalA);
-      appendLog([
-        '--- Karate Bout vs. Training Dummy ---',
-        ...result.events.map(narrateSimEvent),
-        result.winner === 'a'
-          ? 'You win!'
-          : result.winner === 'b'
-            ? 'The Training Dummy wins.'
-            : "It's a draw.",
       ]);
     },
     [chao, appendLog],
@@ -163,6 +141,5 @@ export function useGame() {
     bondBondCard,
     consumeRegimenCard,
     runRace,
-    runBout,
   };
 }

@@ -10,7 +10,10 @@
 export type StatColor = 'green' | 'red' | 'black' | 'blue' | 'white';
 // green=Stamina, red=Run, black=Power, blue=Fly, white=Swim
 
-export type Stat = 'swim' | 'fly' | 'run' | 'power' | 'stamina' | 'mind' | 'luck';
+// Climb and Jump added 2026-08-20 (roadmap.md Phase 2) — genuinely new,
+// dedicated stats, not reflavors of Power/Run (GDD §3.1). They resolve their
+// own Leg types alongside, not instead of, Obstacle/Sprint.
+export type Stat = 'swim' | 'fly' | 'run' | 'power' | 'stamina' | 'mind' | 'luck' | 'climb' | 'jump';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
@@ -26,8 +29,17 @@ export type CardType = 'bond' | 'regimen' | 'technique' | 'trait' | 'item' | 'ha
 // Effects (shared trigger/effect shape — architecture.md §5.3)
 // ---------------------------------------------------------------------------
 
+// Karate Bout was removed 2026-08-20 (GDD's revision note) — races only.
+// `round_start`/`on_hit`/`on_dodge`/`bout_start` are Bout-only trigger kinds
+// with no resolver left to fire them; they're kept here (not deleted)
+// because existing card data still authors keywords/effects against them
+// (packages/sim/src/cards/data/*.ts) and the Phase 2 audit's decision was to
+// leave that data dormant pending a real Race-relevant reflavor, not force a
+// rewrite of every affected card right now. `stamina_below` survives on its
+// own merits — Stamina still depletes across Race Legs, so it's a live,
+// reachable trigger under the Race resolver, not a Bout-only leftover.
 export type TriggerCondition =
-  | { on: 'leg_start'; legType?: 'sprint' | 'obstacle' | 'water' | 'air' }
+  | { on: 'leg_start'; legType?: 'sprint' | 'obstacle' | 'climb' | 'jump' | 'water' | 'air' }
   | { on: 'leg_won' }
   | { on: 'round_start' }
   | { on: 'on_hit'; as: 'attacker' | 'defender' }
@@ -53,10 +65,14 @@ export type EffectOp =
   | { op: 'autoResolveDNF'; result: 'safe' }
   // Phase 0 escape hatch: several keyword effects in the example card set
   // (e.g. "Rooted", "Overclock", "Unshakeable") don't map cleanly onto the
-  // primitives above yet. Real execution semantics are a Phase 1 concern —
-  // the Race Leg resolver and Karate Bout resolver (architecture.md §5.2-5.3)
-  // are what give these teeth. Until that resolver exists, `custom` lets
-  // card data exist and type-check without guessing at premature mechanics.
+  // primitives above yet. Real execution semantics are a resolver concern —
+  // the Race Leg resolver (architecture.md §5.2) is what gives these teeth.
+  // `custom` lets card data exist and type-check without guessing at
+  // premature mechanics. Some cards using `preventDamage`/`forceEvade`/
+  // `forceHit` were originally authored for the now-removed Karate Bout
+  // (see the GDD's 2026-08-20 revision note) — the Race resolver doesn't
+  // consume these ops from controlOps either, so they're dormant the same
+  // way `custom` ops are, pending a Race-relevant reflavor.
   | { op: 'custom'; description: string };
 
 export interface TriggeredEffect {
@@ -109,7 +125,11 @@ export interface RegimenCard extends CardBase {
 export interface TechniqueCard extends CardBase {
   type: 'technique';
   energyCost: number;
-  scope: 'race' | 'bout';
+  // `scope` (originally 'race' | 'bout') was removed 2026-08-20: with Karate
+  // Bout cut, every Technique is Race-scoped, so the field carried no
+  // information anymore. Existing cards that were authored as 'bout' are
+  // still valid data — see the Phase 2 audit note on EffectOp's `custom`
+  // variant for how their dormant effects are handled.
   effect: TriggeredEffect;
   exileOnUse: boolean; // true for most Legendary techniques, GDD §4.2
 }
@@ -268,11 +288,14 @@ export interface GameState {
 // Event log (replay — architecture.md §5.1)
 // ---------------------------------------------------------------------------
 
+// `turn_order`/`hit`/`evasion_check` were removed 2026-08-20 along with
+// Karate Bout — unlike the dormant-but-kept TriggerCondition/EffectOp
+// variants above, no card data anywhere references these SimEvent kinds
+// directly (cards author triggers and ops, not log events), and no
+// resolver produces them anymore now that bout.ts is deleted, so there's
+// nothing "dormant" to preserve — they were purely Bout's own output shape.
 export type SimEvent =
   | { type: 'grade_roll'; cardId: string; stat: Stat; roll: number }
-  | { type: 'turn_order'; chaoId: string; runStat: number; result: 'first' | 'second' }
-  | { type: 'hit'; attackerId: string; defenderId: string; damage: number }
-  | { type: 'evasion_check'; chaoId: string; roll: number; threshold: number; result: boolean }
   | { type: 'leg_result'; chaoId: string; legType: string; success: boolean }
   | { type: 'dnf'; chaoId: string }
   | { type: 'technique_fired'; cardId: string; chaoId: string }

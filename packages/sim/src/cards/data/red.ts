@@ -75,7 +75,6 @@ export const adrenalineRush: TechniqueCard = {
   type: 'technique',
   color: 'red',
   energyCost: 1,
-  scope: 'bout',
   exileOnUse: false,
   effect: {
     trigger: { on: 'round_start' },
@@ -166,7 +165,6 @@ export const falseStart: TechniqueCard = {
   type: 'technique',
   color: 'red',
   energyCost: 2,
-  scope: 'race',
   exileOnUse: false,
   effect: {
     trigger: { on: 'leg_start' },
@@ -217,7 +215,6 @@ export const photoFinish: TechniqueCard = {
   type: 'technique',
   color: 'red',
   energyCost: 3,
-  scope: 'race',
   exileOnUse: true,
   effect: {
     trigger: { on: 'leg_start', legType: 'sprint' },
@@ -228,6 +225,54 @@ export const photoFinish: TechniqueCard = {
       },
     ],
   },
+};
+
+// Jump cards, added 2026-08-20 (roadmap.md Phase 2) — Jump is a genuinely
+// new, dedicated Stat (GDD §3.1), proposed to live in Red as a secondary
+// stat lane alongside Run (GDD §3.2), same as some Bond Cards already grant
+// a primary + minor stat pair.
+
+export const springHeelHare: BondCard = {
+  id: 'bond.spring_heel_hare',
+  name: 'Spring-Heel Hare',
+  rarity: 'common',
+  type: 'bond',
+  color: 'red',
+  slot: 'feet',
+  statGrants: [
+    { stat: 'run', min: 6, max: 9 },
+    { stat: 'jump', min: 4, max: 7 },
+  ],
+  speciesTags: ['rabbit'],
+  bodyMutation: 'coiled_leg_muscles',
+};
+
+export const cliffhopperGoat: BondCard = {
+  id: 'bond.cliffhopper_goat',
+  name: 'Cliffhopper Goat',
+  rarity: 'uncommon',
+  type: 'bond',
+  color: 'red',
+  slot: 'feet',
+  statGrants: [{ stat: 'jump', min: 10, max: 15 }],
+  speciesTags: ['beast'],
+  bodyMutation: 'spring_loaded_hooves',
+  keyword: {
+    // Direct match: autoWinLeg gated to Jump legs, same pattern as
+    // dustdashLizard's Bolt above.
+    trigger: { on: 'leg_start', legType: 'jump' },
+    apply: [{ op: 'autoWinLeg' }],
+    onceLimit: 'per_race',
+  },
+};
+
+export const boundingDraught: RegimenCard = {
+  id: 'regimen.bounding_draught',
+  name: 'Bounding Draught',
+  rarity: 'common',
+  type: 'regimen',
+  color: 'red',
+  statGrants: [{ stat: 'jump', min: 8, max: 12 }],
 };
 
 export const redCards = [
@@ -245,4 +290,7 @@ export const redCards = [
   feralMomentum,
   sonicBoomSprinter,
   photoFinish,
+  springHeelHare,
+  cliffhopperGoat,
+  boundingDraught,
 ];
