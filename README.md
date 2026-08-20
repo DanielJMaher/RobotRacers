@@ -25,4 +25,10 @@ Every run is one **Generation**: you hatch a Chao, and over its natural lifespan
 
 ## Status
 
-Design phase. No code yet — see the roadmap for the build order.
+**Phase 0 (Foundation) complete** — see [`docs/03-roadmap/roadmap.md`](docs/03-roadmap/roadmap.md) for the full build order. What exists today:
+
+- A pnpm + Turborepo monorepo (`packages/sim`, `packages/app`), matching the conventions used elsewhere in this dev environment (strict TypeScript, Vitest, Prettier).
+- `@chao-draft/sim`: a pure, DOM-free simulation core — the full type surface from [`data-schemas.md`](docs/02-technical/data-schemas.md), a seeded RNG, a 34-card slice of the example set (all of Green + Red, plus colorless Items and Habitats), and a bonding rules engine (`createChao`, `bondCard`, `consumeRegimen`, `recomputeDerived`, `computeSplashTax`) with 17 passing unit tests.
+- `@chao-draft/app`: a placeholder Vite + React shell (builds and serves; not yet wired to `sim`).
+
+Run `pnpm install`, then `pnpm build` / `pnpm typecheck` / `pnpm test` from the repo root. Next up: Phase 1 (draft engine, bonding UI, Race/Bout resolvers) — see the roadmap.

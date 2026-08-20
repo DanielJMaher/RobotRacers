@@ -119,7 +119,14 @@ type EffectOp =
   | { op: "forceEvade" }
   | { op: "forceHit" }
   | { op: "autoWinLeg" }
-  | { op: "autoResolveDNF"; result: "safe" };
+  | { op: "autoResolveDNF"; result: "safe" }
+  // Phase 0 escape hatch: several keyword effects in the example card set
+  // (e.g. "Rooted", "Overclock", "Unshakeable") don't map cleanly onto the
+  // primitives above without guessing at execution semantics the Race/Bout
+  // resolver hasn't been built yet to define. `custom` lets card data exist
+  // and type-check now; Phase 1 replaces these with precise ops as each
+  // keyword actually gets implemented.
+  | { op: "custom"; description: string };
 
 type KeywordEffect = TriggeredEffect; // keywords are just named, reusable TriggeredEffects
 ```
@@ -127,13 +134,29 @@ type KeywordEffect = TriggeredEffect; // keywords are just named, reusable Trigg
 ## Chao
 
 ```typescript
+// A BondCard as *equipped*: the static card definition plus the specific
+// grade roll it happened to get this time (GDD §4.3 — two copies of the same
+// card don't always grant the same amount). Persisting the rolled amount is
+// what makes un-bonding (overwriting a slot) exact subtraction instead of a
+// re-roll or a guess — an earlier draft of this doc had `bondSlots` hold a
+// bare `BondCard`, which turned out not to be enough to reverse cleanly.
+interface RolledStatGrant {
+  stat: Stat;
+  amount: number;
+}
+
+interface BondedCard {
+  card: BondCard;
+  rolledGrants: RolledStatGrant[];
+}
+
 interface Chao {
   id: string;
   name: string;
   bornGeneration: number;         // which run created it (for reincarnation lineage)
 
   stats: Record<Stat, number>;
-  bondSlots: Partial<Record<BondSlot, BondCard>>;
+  bondSlots: Partial<Record<BondSlot, BondedCard>>;
   traits: TraitCard[];             // max 2, GDD §3.5 / §4.2
   items: ItemCard[];               // freely re-equippable, not slot-limited the same way
 
@@ -246,3 +269,5 @@ interface ResolutionResult {
 - **Derived fields aren't stored redundantly where avoidable** (`colorIdentity`, `alignment`, `speciesTagCounts` on `Chao` are computed from `bondSlots`/`traits`/`items`) — but they're listed as fields here rather than pure getters because the sim core is plain-data/no-class per the architecture doc; treat them as fields that a `recomputeDerived(chao)` pure function refreshes after every bonding/unbonding operation, not fields any code writes to directly.
 - **`ResolutionResult` is the only return shape** for `resolveRace` and `resolveBout` — both always return the new state *and* the event log together, so the "legibility" architectural requirement (architecture.md §5.1) can never accidentally be dropped by a call site that only wanted the final state.
 - These types intentionally don't yet cover breeding (GDD §8, explicitly post-MVP) — when that's picked up, it'll need an `Egg` type carrying two-parent allele data, deferred until it's actually being built.
+- **Regimen Cards affect stats but not color identity or alignment.** A consumed Regimen Card is gone the instant it's used — it isn't "currently bonded/attached" the way a Bond or Trait Card is, and GDD §3.3 scopes alignment specifically to attached cards. This wasn't obvious from the GDD text alone; it's called out explicitly in `packages/sim/src/chao/bonding.ts`'s `consumeRegimen` so the distinction isn't lost.
+- **Implementation status (Phase 0, see [`roadmap.md`](../03-roadmap/roadmap.md)):** all types above are implemented in `packages/sim/src/types.ts`. `createChao`, `bondCard`, `consumeRegimen`, `recomputeDerived`, and `computeSplashTax` are built and unit-tested (`packages/sim/src/chao/`); the seeded RNG is in `packages/sim/src/rng/`; a ~30-card slice (Green + Red + colorless Items + two Habitats) is authored in `packages/sim/src/cards/data/`. The draft engine, Race/Bout resolvers, and run/map state machine referenced elsewhere in this doc are **not yet implemented** — their types exist here so the shape is agreed on ahead of time, but no logic consumes `DraftState`, `Generation`, or `GameState` yet.

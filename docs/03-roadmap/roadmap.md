@@ -8,12 +8,13 @@ GDD §10 flags the core risk directly: three resource-management layers (draft/b
 
 Not a playable milestone; sets up the structure everything else builds on.
 
-- [ ] Monorepo scaffold (`packages/sim`, `packages/app`) per [`architecture.md`](../02-technical/architecture.md#4-module-boundaries).
-- [ ] Seeded RNG implementation (`sim/rng`), zero other randomness sources anywhere in `sim`.
-- [ ] Core types from [`data-schemas.md`](../02-technical/data-schemas.md) implemented as actual TS.
-- [ ] ~30-card slice of the example set ([`card-set-list.md`](../01-design/card-set-list.md)) authored as real data (enough to exercise one full color pair, e.g. all of Green + Red + a few colorless/Habitat).
+- [x] Monorepo scaffold (`packages/sim`, `packages/app`) per [`architecture.md`](../02-technical/architecture.md#4-module-boundaries). pnpm + Turborepo, matching `GMSim`'s conventions (strict `tsconfig.base.json`, Prettier, vitest).
+- [x] Seeded RNG implementation (`sim/rng`), zero other randomness sources anywhere in `sim`. Mulberry32, `createRng`/`rollInRange`, unit-tested for determinism and range bounds.
+- [x] Core types from [`data-schemas.md`](../02-technical/data-schemas.md) implemented as actual TS (`packages/sim/src/types.ts`) — including a `BondedCard`/`RolledStatGrant` refinement and a `custom` `EffectOp` escape hatch discovered during implementation and folded back into that doc.
+- [x] ~30-card slice of the example set ([`card-set-list.md`](../01-design/card-set-list.md)) authored as real data — all 14 Green + all 14 Red cards, plus 4 colorless Items and 2 Habitats (34 cards total), in `packages/sim/src/cards/data/`.
+- [x] Bonding rules engine (`packages/sim/src/chao/`): `createChao`, `bondCard` (slot occupancy + replacement + grade rolls), `consumeRegimen`, `recomputeDerived` (color identity, alignment, species tag counts), `computeSplashTax` — 17 passing unit tests in `bonding.test.ts` and `rng/index.test.ts`.
 
-**Done when:** `sim` package builds, has the type surface, and a handful of hand-written unit tests can construct a `Chao`, bond a `BondCard` to it, and assert the resulting stat/slot/tag state — with no UI yet.
+**Done when:** `sim` package builds, has the type surface, and a handful of hand-written unit tests can construct a `Chao`, bond a `BondCard` to it, and assert the resulting stat/slot/tag state — with no UI yet. **✅ Met** (`pnpm build`, `pnpm typecheck`, and `pnpm test` all pass; `packages/app` is a placeholder shell only — Phase 1 wires it to `sim`).
 
 ## Phase 1 — Vertical slice: one Chao, one draft, one event
 
