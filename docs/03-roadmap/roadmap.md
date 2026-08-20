@@ -62,12 +62,17 @@ The bracket itself, with no Environment Interludes or Breeding yet — just prov
 
 ## Phase 4 — Environment Interludes
 
-- [ ] `Environment` state: separate from the Chao (the direct descendant of the old Garden Board, now scoped to one Chao's support structure), holding Habitat Cards. Resolve what a Habitat Card actually *does* now that Fruit income is gone (open question below) before implementing its effect.
-- [ ] The Environment Interlude Booster: 3 packs of 3 cards each, pick 1 per pack, no passing/bots involved (GDD §4.5, §6.3) — likely doesn't need the existing `draft/` module's pack-passing machinery at all; probably a new, much simpler function.
+- [ ] `Environment` state: separate from the Chao (the direct descendant of the old Garden Board, now scoped to one Chao's support structure) — **resolved 2026-08-20, fully specified**: exactly 3 Habitat Slots, each generating Fruit of its color at Tournament start + after every race (base 2/trigger). See GDD §6.9 for the complete revived economy.
+- [ ] New `Seed` card type (GDD §4.2, §6.9): drafted from both the Draft Booster and the Environment Interlude Booster; plants into a filled Habitat Slot, converting 1 unit of its output to the Seed's color. One-time plant, no replanting.
+- [ ] Habitat "2-star" combining (GDD §6.9, mirrors Awakening §4.6): 3 same-color Habitat Cards fuse into +1 base Fruit and +1 Seed slot. Needs its own duplicate-detection logic, parallel to (but separate from) Bond Card Awakening.
+- [ ] Habitat placement lock-in: after the initial Draft Booster completes, placing a Habitat into one of the 3 slots is **permanent** — growable (combine, seed) but never swappable. Different rule from Bond Slots (which *do* allow overwriting) — don't accidentally reuse the Bond Slot replacement logic here.
+- [ ] "Open Fort" mechanic: an unfilled Habitat Slot produces 1 colorless Wildcard Fruit per trigger (half the volume of a filled slot, but spendable as any color) instead of sitting inert.
+- [ ] Race reward hooks tied to the economy (GDD §6.9): Fastest-Leg reward (random Fruit, or a chance at a Seed) and back-to-back-last-place reward (a Fruit *and* a Seed) both need the Race resolver to track, per racer, per Leg: who had the best completion, and who's on a last-place streak — this rides on the same full-field-ranking capability Phase 5's scoring formula already needs, just at Leg granularity instead of race granularity.
+- [ ] The Environment Interlude Booster: 3 packs of 3 cards each, pick 1 per pack, no passing/bots involved (GDD §4.5, §6.3) — likely doesn't need the existing `draft/` module's pack-passing machinery at all; probably a new, much simpler function. Now also a source of Seed cards, not just the usual card types.
 - [ ] Apply-then-train flow: drafted cards get applied to the Environment first, then remaining picks get bonded/consumed onto the Chao, per the GDD's explicit ordering.
 - [ ] Wire the two Interlude gates into the Phase 3 bracket state machine: fires after Round 1 and after Round 2, **not** before the Final Race.
 
-**Done when:** both Interludes are playable in sequence within a full Tournament run, and picks made during them visibly affect the Chao and/or Environment before the next round's races.
+**Done when:** both Interludes are playable in sequence within a full Tournament run, Habitat Slots can be filled/combined/seeded, Open Fort is a viable choice, and picks made during Interludes visibly affect the Chao and/or Environment before the next round's races.
 
 ## Phase 5 — Breeding & Tournament-to-Tournament progression
 
@@ -84,9 +89,11 @@ The bracket itself, with no Environment Interludes or Breeding yet — just prov
 ## Phase 6 — Card system follow-through
 
 - [ ] Implement Awakening (GDD §4.6): 3 copies of the same Bond Card fuse into an Awakened version at **3.5×** a single copy's average stat grant. Doesn't exist in code at all yet — this was previously scoped as an "autochess layer" feature and got cut along with the board, but the mechanic itself survives per the GDD rewrite.
-- [ ] Resolve and implement whatever replaces Fruit-funded splash tax for color-identity cost (GDD §4.4's open question) — a new currency, a hard restriction, or cut entirely.
+- [ ] Implement splash tax (GDD §4.4 — **resolved 2026-08-20**: funded by the revived Fruit economy, GDD §6.9). Only the tax *curve* (flat vs. scaling with distance from identity) is still an open number, folded into the balance pass below.
+- [ ] Author Seed cards and any additional Habitat Cards needed for real content coverage (currently only 2 Habitats exist in code — `sunlitMeadow`, `windsweptCliff` — plus 3 more added later for Black/Blue/White; none for the new Seed type at all yet).
 - [ ] Finish the Phase 2 card-data audit: reflavor (or formally retire) any remaining Bout-only-triggered keywords.
-- [ ] Balance pass: leg-check variance, Awakening power level, breeding formula constants, scoring weights — all the placeholder numbers flagged throughout the GDD.
+- [ ] Balance pass: leg-check variance, Awakening power level, breeding formula constants, scoring weights, splash tax curve, **and the whole revived Fruit/Habitat/Seed economy** (base Fruit rates, Seed drop odds, Open Fort viability) — all the placeholder numbers flagged throughout the GDD.
+- [ ] Future ideas explicitly deferred, not built now (GDD §6.9): a large-margin-win reward to incentivize mono-color builds; a 2-for-1 trade value for spending Wildcard Fruit on colorless Item Cards; an item/event to re-base a permanently-locked Habitat.
 
 ## Phase 7 — Stretch / post-MVP
 
@@ -112,8 +119,7 @@ Raised during the 2026-08-20 design discussion, resolved across two sessions the
 | ~~Breeding formula tuning~~ | 5 | **Resolved, simplified:** flat `0.10*parentA + 0.10*parentB` per stat, no RNG (GDD §6.4). Cosmetic/skill inheritance is explicitly **deferred** to a future "Next Up" discussion, not decided and not guessed at. |
 | ~~Scoring formula~~ | 5 | **Resolved:** 1st=6 points, 1 fewer per place behind, down to 6th=1; DNF = last place for that race's field. Requires the Race resolver to rank a full field, not just the player's one Chao — see Phase 5. |
 | Does Happiness still exist as a tracked value, and if so, for what? | 5 | **Shelved (2026-08-20), not cut** — flagged by the user as "could definitely become an interesting balance mechanic," deliberately parked for a dedicated future design pass rather than decided now or discarded by default. |
-| What does a Habitat Card actually do now that Fruit income (its original effect) is gone? | 4 | Needs a decision before the Environment's mechanical identity means anything beyond "a place cards go." Candidate directions discussed 2026-08-20: reduce whatever replaces splash tax directly (no currency involved), grant a flat Energy/stat bonus to the one Chao, or retire the card type entirely. |
-| What replaces Fruit-funded splash tax for color-identity cost — a new currency, a hard restriction, something Environment-granted, or is it cut entirely? | 6 | Currently color identity has zero cost, which may make color commitment meaningless (GDD §8's risk note). |
+| ~~What does a Habitat Card actually do, and what replaces Fruit-funded splash tax?~~ | 4, 6 | **Resolved and substantially expanded (2026-08-20):** Fruit, Habitats, and splash tax are all revived, plus genuinely new mechanics beyond the original design — Seed cards, Habitat "2-star" combining, permanent-placement/growable-not-swappable Habitats, the "Open Fort" empty-slot strategy with Wildcard Fruit, and Fastest-Leg/back-to-back-last-place race rewards. Full spec in GDD §6.9. Only the exact numbers (base rates, tax curve, Seed odds) remain open, folded into Phase 6's balance pass. |
 | ~~Past-Tournament-winners pool mechanism~~ | 5 | **Resolved, and simpler than expected:** there's no pool at all — literal lineage Chao (not stat templates), always exactly 3 babies + 21 fresh random per Tournament, local-to-save only. See GDD §6.5's worked example. Pulling from the broader *eliminated* pool for a true rolling lineage is a named Phase 7 stretch item (#8 above), not built now. |
 | ~~Kindergarten~~ | 7 | **Resolved:** the user likes the idea but it's confirmed unneeded right now — shelved as a TODO for later, the same treatment as Happiness, not an active question to resolve soon. See the explanation below the table for what it was, kept for whenever this gets picked back up. |
 
