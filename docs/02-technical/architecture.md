@@ -101,7 +101,7 @@ Unchanged from the original design: a single seeded PRNG (mulberry32, already im
 
 ### 5.2 Race Leg resolver
 
-Implements GDD §5.1 as a pure function per Leg: `resolveLeg(chao, leg, loadedTechniques, rng) → LegResult`. A full Race is a fold over its Legs (now 5–8 of them, at least 3 distinct types per GDD §5.1), threading Stamina depletion and DNF state through, with loaded Technique triggers checked against each Leg's Event stream. Already implemented in `packages/sim/src/events/race.ts` for the original 4-leg-type version — extending it to the new leg vocabulary (Climb, Jump, per GDD §5.1's open questions) and 5–8-leg course lengths is Phase-level work, not yet done.
+Implements GDD §5.1 as a pure function per Leg: `resolveLeg(chao, leg, loadedTechniques, rng) → LegResult`. A full Race is a fold over its Legs (now 5–8 of them, at least 3 distinct types per GDD §5.1), threading Stamina depletion and DNF state through, with loaded Technique triggers checked against each Leg's Event stream. Already implemented in `packages/sim/src/events/race.ts` for the original 4-leg-type version — extending it to the new leg vocabulary and 5–8-leg course lengths is Phase-level work, not yet done. **Resolved 2026-08-20:** Climb and Jump are confirmed as genuinely new `Stat` union members (not reflavors of Power/Run), which means `LEG_STAT`'s type in `race.ts` needs two new entries and `types.ts`'s `Stat` union needs two new literals — a small, mechanical schema change once this phase starts.
 
 ### 5.3 Karate Bout resolver — REMOVED from the design, legacy in code
 
@@ -118,16 +118,18 @@ A pure rules module that, given a Chao and a card, returns whether the bond is l
 Replaces the original design's map/node-graph state machine entirely. Needs, at minimum:
 
 - **Bracket structure**: 4 groups of 6 → 2 groups of 6 (after consolidation) → 1 group of 6 → 3 ranked finalists, matching GDD §6.2's diagram. A pure function per race-and-eliminate step, similar in shape to the draft engine's `advanceTick` (state in, state + events out).
-- **Entrant generation**: the player's Chao plus 23 others per Tournament. Cheapest viable approach (per architecture §2's recommendation) is a procedural stat/cosmetic roll rather than a full simulated draft per bot entrant — revisit if playtesting shows the bracket feels hollow (GDD §8's risk note).
+- **Draft Booster, once per Tournament**: confirmed (2026-08-20) to run before Round 1, reusing the existing `draft/` module unchanged — the player's seat plus bot seats, exactly like today's Phase 1 vertical slice, just gated to fire once at Tournament start rather than being the whole game.
+- **Entrant generation**: the player's Chao plus 23 others per Tournament. **v1 (build first, per GDD §6.7): a cheap procedural stat/cosmetic roll**, no drafting involved. **v2 (written up, deferred): each entrant runs its own bot-drafted mini-pool** via the existing `draft/bots.ts` heuristic, *plus* a new **bot bonding heuristic that doesn't exist yet** — greedily bond the highest-`rawPower` Bond Card per slot from the entrant's pool. Needed only when v2 is picked up.
+- **Scouting**: a `computeScoutingRead(chao) → Record<Stat, 1|2|3|4|5>`-shaped pure function (GDD §6.7) — buckets a Chao's real stats into a fuzzy icon rating, so any of the 24 entrants (not just ones the player has raced) can be inspected without exposing exact numbers. Cheap, no randomness, straightforward to build alongside v1 entrant generation.
 - **Environment Interlude gating**: recognizing when a group has shrunk to 3 and the next consolidation requires an Interlude first (after Round 1 and Round 2, but explicitly *not* before the Final Race — GDD §6.3).
 - **Breeding eligibility-pool computation**: given the final 1st/2nd/3rd placements and which entrants belonged to which historical group (Group1234, Group12/34, Round-1-only), compute each finisher's eligible partner pool per GDD §6.4's tiered exclusion rules. This is pure set logic over entrant IDs tagged with "furthest round reached" — no new randomness needed here, just bookkeeping.
 - **Breeding resolution**: the stat-blend/strength-factor/cosmetic-inheritance algorithm proposed in GDD §6.4 — a pure function `(parentA, parentB, rng) → babyChao`, following the same `(state, rng) → (state', events)` shape as everything else in this codebase.
 
-None of this is implemented yet — it's the core of whatever the next implementation phase turns out to be (roadmap.md).
+None of this is implemented yet — it's the core of whatever the next implementation phase turns out to be (roadmap.md). Note that only the player's own bracket path needs to be *resolved with visible events* (GDD §6.2, §6.7 — confirmed for now); off-path groups only need a final ranking per race, not a full playable Event log, which keeps their simulation cost trivial even though 22 of 24 entrants' races are never directly watched.
 
 ## 6. Bot drafting
 
-Unchanged from the original design, and still relevant wherever the pack-passing Draft Booster format is used (its continued existence is an open GDD question, §4.3). Each AI seat gets a lightweight **archetype affinity profile**: a weight per color (0–1) initialized flat and updated as it picks:
+Unchanged from the original design. Confirmed (2026-08-20) to still run, once per Tournament before Round 1 (GDD §4.5). Each AI seat gets a lightweight **archetype affinity profile**: a weight per color (0–1) initialized flat and updated as it picks:
 
 1. **Pick 1–3 (open pack):** score every card mostly on raw power (rarity + stat total), lightly influenced by affinity.
 2. **Pick 4+ :** score = `rawPower * 0.4 + colorAffinityMatch * 0.4 + tagSynergyWithPoolSoFar * 0.2`; after each pick, nudge the bot's affinity weights toward the picked card's colors.

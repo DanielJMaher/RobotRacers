@@ -39,8 +39,9 @@ Not a playable milestone; sets up the structure everything else builds on.
 Cleanup + the one Race-side mechanical change the new design needs before a bracket can be built on top of it.
 
 - [ ] Remove `packages/sim/src/events/bout.ts`, `bout.test.ts`, `packages/app/src/game/rival.ts`, and the "Run a Karate Bout" UI button/handler. Remove the now-meaningless `'bout'` value from `TechniqueCard.scope` (or collapse the field entirely if every Technique is Race-scoped now — worth a final check once the removal is done).
-- [ ] Expand `race.ts`'s Leg vocabulary to include Climb and Jump (GDD §5.1 — resolve the open question on whether they're new stats or reflavors of Power/Run before implementing; default proposal is reflavors, see roadmap's open-questions table below).
-- [ ] Support 5–8 Legs per Race (up from the current fixed-shape course), with a validation/generation helper that guarantees at least 3 distinct Leg types per course.
+- [ ] Add `climb` and `jump` to the `Stat` union in `types.ts` (**resolved 2026-08-20: these are real new stats, not reflavors of Power/Run** — GDD §3.1). Update `race.ts`'s `LEG_STAT` map with `obstacle→power`, `climb→climb`, `sprint→run`, `jump→jump` as four distinct entries (previously Climb/Jump didn't exist at all).
+- [ ] Support 5–8 Legs per Race (up from the current fixed-shape course), with a validation/generation helper that guarantees at least 3 distinct Leg types per course, now drawing from up to 7 types (start/sprint/obstacle/climb/jump/water/air).
+- [ ] Author a handful of Climb- and Jump-granting cards (proposed color mapping, GDD §3.2: Climb→Black, Jump→Red — flagged as an interpretation, not locked) so the new stats have at least some card support to test against.
 - [ ] Audit `packages/sim/src/cards/data/*.ts` for keywords/effects that only ever fire on now-dead Bout-only triggers (`bout_start`, `round_start`, `on_hit`, `on_dodge`) — GDD §4.2's content follow-up. Decide per-card: reflavor to a Race trigger, or leave dormant with a clear code comment (matching how `custom` ops are already documented) pending a real content pass.
 
 **Done when:** `pnpm build`/`typecheck`/`test` all green with no Bout code remaining; a Race can be configured with 5–8 Legs across at least 3 types including Climb/Jump; the card-data audit is at least logged (even if not every card is fixed yet).
@@ -50,10 +51,12 @@ Cleanup + the one Race-side mechanical change the new design needs before a brac
 The bracket itself, with no Environment Interludes or Breeding yet — just prove 24 entrants can play down to a ranked Final Race.
 
 - [ ] New `packages/sim/src/tournament/` module (architecture.md §5.5): bracket state (4 groups of 6 → consolidate → 3 → Final Race), a pure per-race "eliminate last place" step function in the same `(state, ...) → (state', events)` shape as the draft engine's `advanceTick`.
-- [ ] Entrant generation: the player's Chao plus 23 non-player Chao. Start with the cheap procedural stat/cosmetic roll (architecture.md §2's recommendation), not a full mini-draft per bot — revisit only if playtesting shows the bracket feels hollow (GDD §8's risk note).
-- [ ] Resolve the "does the player only actively play their own bracket path" open question (see below) and implement accordingly — likely: the player's group's races are played interactively, other groups' races resolve instantly in the background to produce next-round entrants.
+- [ ] The Draft Booster, once per Tournament before Round 1 (**resolved 2026-08-20: it survives, in addition to the Environment Interlude booster** — GDD §4.5, §6.2) — reuse the existing `draft/` module unchanged, just gate it to fire once at Tournament start.
+- [ ] Entrant generation **v1** (resolved 2026-08-20: build the cheap version first): the player's Chao plus 23 non-player Chao via a procedural stat/cosmetic roll, no drafting. (v2 — a real mini-draft + new bot-bonding heuristic per entrant — is written up in GDD §6.7 as a deferred upgrade; don't build it yet.)
+- [ ] Scouting: `computeScoutingRead(chao)`-style function bucketing any entrant's real stats into a fuzzy 1–5 icon rating per Leg-relevant stat (GDD §6.7, resolved 2026-08-20 — build this alongside v1 entrant generation, not deferred).
+- [ ] Confirmed (2026-08-20): only the player's own bracket path is actively simulated with visible events; other groups resolve to a final ranking only, no Event log needed for them (architecture.md §5.5). Full off-path race visibility is a deferred upgrade (GDD §6.7).
 - [ ] First/Second Evolution trigger points: decide what bracket-progress milestones (if any) replace the old "Act 1 boss / Act 2 boss" map triggers (GDD §3.4, architecture.md §5.4).
-- [ ] Minimal UI: a bracket/standings view, race-by-race progression, elimination messaging, Final Race → 1st/2nd/3rd result screen (no breeding UI yet — just show the placements).
+- [ ] Minimal UI: a bracket/standings view, race-by-race progression, elimination messaging, Final Race → 1st/2nd/3rd result screen (no breeding UI yet — just show the placements). Entrant inspection should show the scouting-icon read for any of the 24, not just the player's own Chao.
 
 **Done when:** a playtester can start a Tournament, play through their own group's races across all 3 rounds (with off-path groups resolving silently), reach the Final Race, and see a 1st/2nd/3rd result — entirely without an Environment Interlude or Breeding existing yet.
 
@@ -86,22 +89,24 @@ The bracket itself, with no Environment Interludes or Breeding yet — just prov
 
 ## Phase 7 — Stretch / post-MVP
 
-1. **Multiplayer live co-draft** (architecture.md §9) — network-backed draft seat, if the pack-passing Draft Booster format survives the open question below.
-2. **Async Tournament entrants** (architecture.md §9) — real players' saved Chao lineages filling non-player bracket slots, replacing (or supplementing) procedural generation.
-3. **Cosmetic-only long-term unlock track** (was GDD §7.6's "Difficulty Rank," survives as a stretch idea even though the rest of that section was cut).
-4. **Larger card-set expansion** (was Phase 4's target — 180–220 cards recommended, revisit once real repeat-Tournament data exists).
-5. **A Kindergarten-style narrative event**, if one still has a home anywhere in the new structure (e.g. inside an Environment Interlude) — open question below; may simply be cut along with the map it used to live on.
+1. **Entrant generation v2** (GDD §6.7, written up 2026-08-20): each non-player entrant runs its own mini-draft (existing `draft/bots.ts` heuristic) plus a new bot-bonding heuristic that doesn't exist yet (greedily bond highest-`rawPower` card per slot). Upgrade path from Phase 3's v1 procedural roll, once the core loop is proven and playtesting shows the bracket feels hollow.
+2. **Full off-path bracket visibility** (GDD §6.7, written up 2026-08-20): let the player actually watch (not just scout) other groups' races, full event-log playback — not just a final ranking. Upgrade path from Phase 3's "own path only" scope.
+3. **Multiplayer live co-draft** (architecture.md §9) — network-backed draft seat for the (now-confirmed-surviving) pack-passing Draft Booster.
+4. **Async Tournament entrants** (architecture.md §9) — real players' saved Chao lineages filling non-player bracket slots, replacing (or supplementing) procedural generation. A natural extension of entrant generation v2 above.
+5. **Cosmetic-only long-term unlock track** (was GDD §7.6's "Difficulty Rank," survives as a stretch idea even though the rest of that section was cut).
+6. **Larger card-set expansion** (was Phase 4's target — 180–220 cards recommended, revisit once real repeat-Tournament data exists).
+7. **A Kindergarten-style narrative event**, if one still has a home anywhere in the new structure (e.g. inside an Environment Interlude) — open question below; may simply be cut along with the map it used to live on.
 
 ## Open design questions
 
-Raised during the 2026-08-20 design discussion, not yet resolved. Roughly ordered by how soon they'll block implementation:
+Raised during the 2026-08-20 design discussion. **Four resolved the same day** (struck through, kept for the record); the rest are still open, roughly ordered by how soon they'll block implementation:
 
 | Question | Relevant phase | Notes |
 |---|---|---|
-| Does the player only actively play races within their own bracket path, with other groups resolved via background simulation? | 3 | Assumed yes in this doc (it's the only practical way to avoid making the player watch/click through 22 races per Tournament) — not yet confirmed. |
-| Are Climb and Jump new Stats, or reflavors of the existing Power/Run checks under new names? | 2 | GDD §5.1 proposes reflavoring (Climb→Power, Jump→Run) rather than growing the Stat union — pending confirmation. |
-| Does the original 15-card pack-passing Draft Booster format still exist anywhere, or is the Environment Interlude's 3-packs-of-3 the *only* card acquisition now? | 2, 4 | The Tournament spec as given never mentions the big draft format at all — worth confirming explicitly rather than assuming it quietly survives. |
-| How are the 23 non-player Tournament entrants generated — a full mini-draft/bonding pass each (textured, expensive), or a cheap procedural stat-and-cosmetic roll (fast, flatter)? | 3 | GDD §8 flags the risk of a hollow-feeling bracket if entrants are just numbers; architecture.md §2 recommends starting cheap. |
+| ~~Does the player only actively play races within their own bracket path?~~ | 3 | **Resolved:** yes, for now — other groups resolve via background simulation with a final ranking only, no full Event log. Off-path races get scouting icons (GDD §6.7) instead of full visibility; full visibility is Phase 7's stretch item. |
+| ~~Are Climb and Jump new Stats, or reflavors of Power/Run?~~ | 2 | **Resolved:** genuinely new, distinct Stats — not reflavors. Color mapping (Climb→Black, Jump→Red, as secondary stats) is still an interpretation, not locked (GDD §3.2). |
+| ~~Does the original 15-card pack-passing Draft Booster format still exist?~~ | 2, 3 | **Resolved:** yes, alongside the Environment Interlude booster — runs once per Tournament, before Round 1. |
+| ~~How are the 23 non-player Tournament entrants generated?~~ | 3 | **Resolved:** cheap procedural roll for v1 (build now); a full mini-draft-per-entrant v2 is written up in GDD §6.7 as a deferred upgrade (Phase 7), not built yet. |
 | What does a Habitat Card actually do now that Fruit income (its original effect) is gone? | 4 | Needs a decision before the Environment's mechanical identity means anything beyond "a place cards go." |
 | What replaces Fruit-funded splash tax for color-identity cost — a new currency, a hard restriction, something Environment-granted, or is it cut entirely? | 6 | Currently color identity has zero cost, which may make color commitment meaningless (GDD §8's risk note). |
 | Does Happiness still exist as a tracked value, and if so, for what? | 5 | Its only original purpose (gating the reincarnation cocoon) is gone; could be repurposed or cut. |
@@ -109,7 +114,7 @@ Raised during the 2026-08-20 design discussion, not yet resolved. Roughly ordere
 | Cosmetic-inheritance curve: the proposed `inheritedSlotCount = min(4, floor(tournamentNumber / 3))` placeholder — is this the right shape/pace for "specialization creeps in gradually"? | 5 | Purely illustrative in the GDD; needs real tuning once there's something to play. |
 | Past-Tournament-winners pool mechanism: how large, how it refreshes, local-to-one-save vs. shared/global, what fraction of the 21 non-baby entrant slots draw from it. | 5 | GDD §6.5 names the *intent* (preserve/escalate difficulty) without a mechanism. |
 | Scoring formula: exactly what earns points per race placement, and how they sum across a whole Tournament run. | 5 | "Just give points for how they finish in each race," per the original spec — no formula chosen yet. |
-| Does Awakening (GDD §4.6) realistically come up under the much smaller Environment Interlude booster (3 cards per Interlude, 2 Interludes per Tournament = 6 cards total from that source) if the big pack-passing draft doesn't survive? | 2, 4, 6 | Getting 3 copies of the same card is far likelier from a 45-card draft than a 6-card trickle — depends heavily on the "does the big draft format survive" question above. |
+| ~~Does Awakening realistically come up given the small Environment Interlude booster, if the big draft doesn't survive?~~ | 6 | **Moot** — the big 45-card pack-passing draft is confirmed to still run once per Tournament, so 3-of-a-kind duplicates are as realistic as they were in the original design. |
 | Does a Kindergarten-style narrative event still have a home (e.g. inside an Environment Interlude), or is it cut along with the map it used to live on? | 7 | Low priority — stretch-scoped either way. |
 
 ## Trademark & naming

@@ -45,9 +45,11 @@ Same five physical stats as the source material (research §1), all now scoped t
 |---|---|
 | Swim | Resolves Water legs |
 | Fly | Resolves Air legs and the Flying shortcut fork |
-| Run | Resolves Sprint (and other Run-flavored) legs |
-| Power | Resolves Obstacle/Climb legs |
+| Run | Resolves Sprint legs |
+| Power | Resolves Obstacle legs |
 | Stamina | Determines whether a Chao finishes at all (DNF threshold) |
+| **Climb** *(new, 2026-08-20)* | Resolves Climb legs — a genuinely distinct stat from Power, not a reflavor of it (see §5.1) |
+| **Jump** *(new, 2026-08-20)* | Resolves Jump legs — a genuinely distinct stat from Run, not a reflavor of it (see §5.1) |
 
 Mind and Luck are kept as minor modifiers (Mind affects Technique success chance; Luck affects leg-check variance) rather than headline stats — they were minor in the source material and stay minor here.
 
@@ -64,6 +66,8 @@ Every stat is assigned a color, MTG-style. This is the load-bearing translation 
 | Swim | ⚪ White | Defense, protection, order — stabilizing, DNF-proofing. |
 
 Two-color archetypes exist exactly like MTG guilds and work as draft signposts (the full 10-pair table, with example cards, is in [`card-set-list.md`](card-set-list.md#guild-archetypes)). Several of the existing archetype identities (Brawler, Bruiser, Sentinel, Trickster) were written with Karate Bout in mind and will need a race-only reframe — flagged as a content follow-up, not resolved in this pass.
+
+**Climb and Jump don't get their own colors.** They're real, distinct stats (§3.1) — not a color-pie expansion. Proposed mapping (my call, not yet confirmed by the user): Climb-granting cards stay Black, since climbing is still thematically Power-adjacent effort; Jump-granting cards stay Red, since jumping is still thematically Run-adjacent explosive movement. A Bond Card can grant Climb or Jump as a *secondary* stat the same way some cards already grant two stats today (e.g. Bramble Hare: Green, grants both Stamina and Run) — the 5-color, 10-guild structure stays intact, it's just that Black now also has a secondary stat lane (Climb) alongside Power, and Red has one (Jump) alongside Run. Flagged as an interpretation, not a locked decision.
 
 ### 3.3 Alignment: a second, independent axis
 
@@ -135,7 +139,7 @@ Four tiers, mapped onto the source material's E–S hidden-grade idea (research 
 
 A card's **grade roll** (visible as a small range on the card, e.g. "Swim +12–18") reintroduces the source material's per-instance variance without hiding rarity itself.
 
-**Note:** this "15-card pack" frequency table describes the *Draft Booster* format from the original design. It's unclear whether that format (an N-seat pack-passing draft against bots) still has a place anywhere in the new Tournament structure, since the only card acquisition the Tournament spec actually describes is the much smaller Environment Interlude booster (§6.3, 3 packs of 3 cards, no passing). Flagged as an open question — see roadmap.md.
+**Resolved (2026-08-20):** this "15-card pack" frequency table describes the *Draft Booster* format from the original design, and it **does** still have a place in the Tournament: it runs once, at the very start of a Tournament, before Round 1 (§6.2's bracket diagram). The much smaller Environment Interlude booster (§6.3, 3 packs of 3 cards, no passing) is a separate, additional card-acquisition moment, not a replacement for this one.
 
 ### 4.4 Color identity, splash cost, and archetypes
 
@@ -145,12 +149,12 @@ Ten guild-style two-color archetypes still exist (five listed in §3.2, the rema
 
 ### 4.5 Draft format
 
-Two different card-acquisition moments now exist, and they work differently:
+Two different card-acquisition moments exist side by side (confirmed 2026-08-20 — both survive, neither replaces the other):
 
-- **Draft Booster** (original format, status TBD per §4.3): open a 15-card pack, pick one, pass the rest to the next of 3–7 AI bot seats; repeat for 3 packs. Everything picked joins your pool.
-- **Environment Interlude Booster** (new, §6.3): 3 packs of 3 cards each, pick 1 per pack, no passing — a solo choice, not a shared draft. Much smaller stakes per pick, much more frequent (once per Interlude).
+- **Draft Booster** (original format): open a 15-card pack, pick one, pass the rest to the next of 3–7 AI bot seats; repeat for 3 packs. Everything picked joins your pool. Runs **once per Tournament, before Round 1** (§6.2).
+- **Environment Interlude Booster** (new, §6.3): 3 packs of 3 cards each, pick 1 per pack, no passing — a solo choice, not a shared draft. Much smaller stakes per pick. Runs **twice per Tournament** (after Round 1, after Round 2).
 
-AI drafter bots (where the pack-passing format is used) have simple archetype-affinity weights (see [`architecture.md`](../02-technical/architecture.md#bot-drafting) for the algorithm) so that packs feel like they're being fought over, not handed to you.
+AI drafter bots (for the pack-passing Draft Booster) have simple archetype-affinity weights (see [`architecture.md`](../02-technical/architecture.md#bot-drafting) for the algorithm) so that packs feel like they're being fought over, not handed to you.
 
 ### 4.6 Duplicates & Awakening
 
@@ -164,13 +168,14 @@ Per pillar #1, none of this is played directly — it's simulated from Chao stat
 
 ### 5.1 Race Leg resolution
 
-A Race is now a sequence of **5 to 8 Legs**, drawing from at least 3 distinct Leg types per race (expanded from the original Start/Sprint/Obstacle/Water/Air set):
+A Race is now a sequence of **5 to 8 Legs**, drawing from at least 3 distinct Leg types per race (expanded from the original Start/Sprint/Obstacle/Water/Air set). **Resolved 2026-08-20:** Climb and Jump are their own Legs checking their own dedicated stats (§3.1) — they don't replace or reflavor Obstacle/Sprint, they sit alongside them, giving up to 7 distinct Leg types total:
 
 | Leg type | Stat checked | Notes |
 |---|---|---|
 | Sprint | Run | Straightforward pace check. |
-| Obstacle / Climb | Power | Climb is a distinct narrative flavor of the same Power check — **open question** whether it deserves its own difficulty curve or is purely cosmetic, see roadmap.md. |
-| Jump | Run (proposed) | New leg type requested for variety. **Open question:** should Jump check Run (an explosive-movement flavor of the existing stat) or introduce a new stat entirely? Proposed default: reuse Run rather than grow the Stat union, pending confirmation. |
+| Obstacle | Power | Unchanged from the original design. |
+| Climb | Climb *(new stat)* | Distinct from Obstacle/Power — a Chao can be a strong Power racer and a weak climber, or vice versa. |
+| Jump | Jump *(new stat)* | Distinct from Sprint/Run, same reasoning. |
 | Water | Swim | |
 | Air | Fly | |
 | (Flying/Swim shortcut fork) | Fly or Swim | Not a Leg type on its own — a fork attached to any Leg, resolved as: a threshold check on the fork's stat decides whether the shortcut is taken, then a second check (same stat) resolves the shortcut Leg itself. Unchanged from the original design. |
@@ -197,6 +202,8 @@ A run is a single **Tournament**: a 24-entrant single-elimination bracket the pl
 ### 6.2 The Bracket
 
 ```
+[ DRAFT BOOSTER ×1 — §4.5, the original 15-card pack-passing format ]
+                              |
 Round 1 — 4 groups of 6, 3 races each (last place eliminated per race: 6→5→4→3)
    Group 1        Group 2        Group 3        Group 4
    (6→5→4→3)      (6→5→4→3)      (6→5→4→3)      (6→5→4→3)
@@ -220,7 +227,7 @@ Round 3 —      Group12 + Group34 → Group1234
                           BREEDING (§6.4)
 ```
 
-24 entrants → 12 (after Round 1) → 6 (after Round 2) → 3 (after Round 3) → ranked by the Final Race. The player's Chao occupies one of the 24 slots; **only the player's own bracket path is actively played** — the other groups' races resolve independently (bot vs. bot) to produce the entrants the player's consolidated groups will later contain. *(Assumption, not yet confirmed with the user — flagged in roadmap.md.)*
+24 entrants → 12 (after Round 1) → 6 (after Round 2) → 3 (after Round 3) → ranked by the Final Race. The player's Chao occupies one of the 24 slots; **confirmed (2026-08-20): for now, only the player's own bracket path is actively played** — the other groups' races resolve independently in the background to produce the entrants the player's consolidated groups will later contain. Watching (not just playing) other groups' races is a documented future upgrade — see §6.7.
 
 Every group-stage race eliminates exactly the last-place finisher; the group shrinks by one each race until 3 remain, then consolidates with another 3-chao group for the next round.
 
@@ -283,6 +290,24 @@ The 3 babies produced by Breeding fill 3 of the next Tournament's 24 slots. The 
 - **Score** is generated from race placements across the whole run (exact formula not yet designed — "just give points for how they finish in each race," per the user's spec; see roadmap.md).
 - The player can inspect their Chao at any time — both its stats and its current visual/cosmetic state.
 
+### 6.7 Entrant generation & scouting
+
+**Decided 2026-08-20:** start cheap, write up the richer version for later rather than building it now.
+
+**Entrant generation, v1 (build this first):** the 23 non-player entrants get a procedural stat-and-cosmetic roll — randomized but plausible stat totals (no actual draft, no bonding decisions), fast to generate and simulate 23-at-a-time every Tournament.
+
+**Entrant generation, v2 (written up now, deferred implementation):** each non-player entrant instead runs its own scaled-down version of the real pipeline —
+
+1. Run the entrant through the same bot-drafting heuristic already built for the player's Draft Booster (`packages/sim/src/draft/bots.ts`) — same pack, same 3-round/15-card structure, just no human seat.
+2. **New requirement this needs that doesn't exist yet:** a *bot bonding heuristic* — today's bots only know how to draft, nothing decides how a bot bonds its drafted pool onto its 4 Bond Slots. Proposed approach: for each slot, greedily bond whichever Bond Card in the entrant's pool scores highest by the same `rawPower`-style heuristic already used for drafting (`packages/sim/src/draft/bots.ts`'s `rawPower`), respecting whatever color affinity the entrant's draft already committed to.
+3. Optionally run the entrant through its own Environment Interlude booster picks between rounds, same as the player.
+
+This is meaningfully more expensive (23× a mini-draft-plus-bonding pass, potentially repeated at each Interlude) but produces genuinely textured rivals — each one *made choices*, addressing the design risk in §8. Revisit once the v1 loop is proven and playtesting shows the bracket feels hollow.
+
+**Scouting (v1, build this now alongside entrant generation):** even though only the player's own bracket path is actively played (§6.2), **any** entrant — including ones the player hasn't raced yet — should be inspectable via a fuzzy, icon-based "scouting read" per Leg-relevant stat (Swim, Fly, Run, Power, Climb, Jump, Stamina): something like a 1–5 icon rating per stat, bucketed from the entrant's real numbers rather than showing exact figures, so a player can look at a rival and think "I bet that one's a strong swimmer" without being handed a spreadsheet. This is a lightweight derived-data function (`computeScoutingRead(chao) → Record<Stat, 1|2|3|4|5>` or similar), not a new simulation system.
+
+**Full bracket visibility (v2, written up now, deferred):** letting the player actually *watch* (not just scout) other groups' races — full event-log playback for off-path races, not just a final placement — is a documented future upgrade once the core loop and scouting are both proven out.
+
 ## 7. Multiplayer / async note
 
 Bot-generated Tournament entrants (§6.5) are the natural home for the "async ghost" idea from the original design: instead of (or alongside) procedurally generated opponents, some of the 21 non-baby entrant slots each Tournament could be populated by real other players' saved Chao lineages, snapshotted server-side. Because Race resolution is a pure function of a Chao's stats/cards + a seed, this requires no new resolver logic — only a new source for where an entrant's `Chao` data comes from. Still explicitly post-MVP; not required for a single-player Tournament loop to work.
@@ -292,7 +317,7 @@ Bot-generated Tournament entrants (§6.5) are the natural home for the "async gh
 | Risk | Why it matters | Mitigation |
 |---|---|---|
 | A single bad Race can end the entire run (§6.6) — this is now *confirmed* intentional, not a placeholder, but it's still a high-variance structure. | Roguelites can get away with harsh elimination if losing still *feels* meaningful (a story, a score) — if it just feels like bad luck with no narrative or skill signal, it reads as unfair rather than tense. | Lean hard on the event-log narration (already built, GDD §5.1/architecture.md §5.1) so *why* a Chao lost is always legible, and make sure scoring (§6.6) rewards how far a run got, not just win/loss, so an early elimination still has something to show for it. |
-| The 23 non-player Tournament entrants need a real generation strategy or the bracket will feel hollow — a wall of procedurally-rolled stat blocks with no visible drafting/personality reads very differently from 23 other "chao that made choices." | The whole design's identity is built on cards + drafting mattering — if opponents are just numbers, half the game's texture is invisible to the player. | Decide (open question, roadmap.md) whether bot entrants get their own mini-draft/bonding pass (expensive but textured) vs. a cheaper procedural stat-and-cosmetic roll (fast but flatter) — likely start cheap for a vertical slice, revisit once the core loop is proven. |
+| The 23 non-player Tournament entrants start with a cheap procedural stat roll (§6.7, v1) — a wall of stat blocks with no visible drafting/personality reads very differently from 23 other "chao that made choices," which is exactly why v2 (a real mini-draft + bonding pass per entrant) exists as a written-up upgrade rather than being dropped. | The whole design's identity is built on cards + drafting mattering — if opponents are just numbers, half the game's texture is invisible to the player. | The scouting-icon feature (§6.7) is the interim mitigation — even a procedurally-rolled entrant reads as "a strong swimmer" rather than a bare number. Upgrade to v2 generation once the core loop is proven and playtesting shows the bracket feels hollow. |
 | Breeding's three-tier exclusion pool (1st/2nd/3rd place have progressively narrower eligible partners, §6.4) is intricate — a player choosing a breeding partner needs to understand *why* certain chao are greyed out. | Confusing exclusion rules undermine what should be a triumphant, legible moment (you won, now pick your favorite rival to carry on your line). | UI should show *why* a given entrant is ineligible (e.g., "made it to the Final 6 — 2nd place can't pick them"), not just grey them out silently. |
 | Several already-authored cards (§4.2) have keywords written for a Bout that no longer exists — they're inert, not broken, but a player drafting them gets a dead-feeling card. | Undermines pillar #3 (rarity/power should be *discovered*, not a trap) if a drafted Rare or Legendary quietly does nothing. | Content follow-up pass (roadmap.md) to reflavor Bout-only keywords into Race-relevant effects before this card set is treated as ship-ready, not just left as a known gap indefinitely. |
 | Splash tax (§4.4) has no funding source anymore now that Fruit is cut — color identity currently has no cost at all, which may make color commitment meaningless. | Directly affects draft-pick tension; color identity was one of the design's core levers. | Open question, roadmap.md — needs a decision before Phase-level implementation resumes. |
