@@ -265,14 +265,14 @@ Not decided yet, on purpose. For v1, a baby simply starts as a fresh Chao with *
 
 ### 6.5 Tournament-to-tournament progression
 
-The 3 babies produced by Breeding fill 3 of the next Tournament's 24 slots. The remaining 21 are freshly generated, but **seeded partly from a persistent pool of past Tournament winners** ("thus preserving difficulty," per the user's spec) rather than being purely random every time. Genuinely undesigned so far — the *intent* (opponents get tougher over time) is clear, but none of the mechanism is:
+**Resolved 2026-08-20, and much simpler than the earlier "persistent pool" framing suggested.** There is no abstract pool for now — just direct lineage carryover, literal Chao (not stat templates), tracked with real parent/child links:
 
-- **What actually goes in the pool?** The literal finalist Chao who won (meaning it could show up again later as a rival, even though its own storyline "ended" when it bred)? Or something more abstract — a stat template/archetype snapshot representing "how strong a winning bloodline was," used to seed a *new* procedurally-generated entrant at a higher-than-random baseline, without literally reusing the same individual? These have very different implications (the first means named rivals can recur across Tournaments; the second means only the *toughness* persists, not the individual).
-- **Pool size and decay.** Does it cap (e.g., the last N winners) with old entries aging out, or grow unbounded for the life of a save — which, over a long playthrough, would eventually mean *most* entrants are pool-derived rather than fresh?
-- **Draw rate.** What fraction of the 21 non-baby slots draw from the pool each Tournament — a fixed count, a percentage chance per slot, or a rate that itself scales with how many Tournaments have passed (ramping difficulty rather than a flat rate from the start)?
-- **Scope.** Is this pool local to one player's own save (their own run's history), or shared/global (a persistent "hall of champions" — which would also make it the natural bridge to the async-ghost multiplayer idea in §7, rather than a separate system)?
+- Each of the 3 Final Race finalists who breeds contributes **exactly one baby** to the next Tournament's 24 slots — always 3 lineage babies, always 21 freshly, purely randomly generated entrants. No draw rate to tune, no pool size to cap, because there's no pool: it's a fixed 3-and-21 split every single time.
+- **Worked example** (the user's own, 2026-08-20): Tournament 1 is the player + 23 random Gen-1 entrants. Say the player wins (1st place) and breeds with whoever they picked — say an entrant who placed 4th overall (a perfectly legal pick; 1st place's only exclusions are the other two finalists, GDD §6.4). 2nd place and 3rd place *also* each bred with someone from their own eligible pool. Tournament 2 (Gen 2) now has: the player's own baby (inheriting a flat 10% of two above-average parents' stats, per §6.4 — stronger than a fresh baseline Chao, nowhere near parent strength), plus 2nd place's baby, plus 3rd place's baby — three known lineage entrants — and 21 freshly random Gen-2 entrants filling the rest. If the player places top 3 again in Tournament 2, the same pattern repeats into Tournament 3: their own new baby, plus the babies of whichever *other* two Tournament-2 finalists bred — chao whose **parents** the player has direct race history against, even though the babies themselves are new.
+- **Scope (resolved):** local to the player's own save, for now. This will want to be multiplayer/shared eventually (a natural bridge to the async-ghost idea in §7), but that's explicitly not soon.
+- **Documented future enhancement, not built now:** pulling from the broader pool of *eliminated* (non-finalist) Chao to help generate Gen 2 through Gen X entrants — a genuine "rolling lineage" where losers' bloodlines can also resurface, not just the 3 finalists' — is good design, deliberately deferred rather than built alongside this simpler v1.
 
-None of this is decided — see roadmap.md.
+See §6.8 for how a player actually inspects this lineage in play.
 
 ### 6.6 Scoring & Elimination
 
@@ -297,6 +297,18 @@ This is meaningfully more expensive (23× a mini-draft-plus-bonding pass, potent
 **Scouting (v1, build this now alongside entrant generation):** even though only the player's own bracket path is actively played (§6.2), **any** entrant — including ones the player hasn't raced yet — should be inspectable via a fuzzy, icon-based "scouting read" per Leg-relevant stat (Swim, Fly, Run, Power, Climb, Jump, Stamina): something like a 1–5 icon rating per stat, bucketed from the entrant's real numbers rather than showing exact figures, so a player can look at a rival and think "I bet that one's a strong swimmer" without being handed a spreadsheet. This is a lightweight derived-data function (`computeScoutingRead(chao) → Record<Stat, 1|2|3|4|5>` or similar), not a new simulation system.
 
 **Full bracket visibility (v2, written up now, deferred):** letting the player actually *watch* (not just scout) other groups' races — full event-log playback for off-path races, not just a final placement — is a documented future upgrade once the core loop and scouting are both proven out.
+
+### 6.8 Chao inspection & lineage (new, 2026-08-20)
+
+Beyond the fuzzy scouting read (§6.7), any entrant can be opened into a full **inspection screen**:
+
+- **Name, Height, Weight** — new cosmetic/flavor attributes, not previously in the design. Proposed default: rolled at creation within a reasonable range, lightly correlated with dominant stat color for flavor (e.g., a Power/Stamina-heavy Chao trends heavier and stockier, a Fly-heavy one trends lighter) — exact formula is a low-priority placeholder, not worth a real design pass yet. These give the player something concrete to reason about an opponent's *build* even before (or instead of) the deferred full cosmetic-inheritance system (§6.4) exists.
+- **Record** — the entrant's own tournament results (placements, wins).
+- **"Raced this Chao" indicator** — appears if the player has personally raced this exact entrant before (realistically: earlier in the *same* bracket, since an individual Chao competes in one Tournament and then either breeds or is done — see §6.5). Clicking it opens the player's head-to-head history against this specific Chao.
+- **"Raced its predecessors" indicator** — appears if this entrant's parent(s) are Chao the player has previously raced, in an earlier Tournament (a lineage baby carries this recognizability forward even though the baby itself is new). Clicking it opens the player's history against the lineage, not just the individual.
+- **Lineage tab** — the entrant's full ancestry chain, each ancestor shown with its own overall record and Height/Weight (or a picture, once art exists) to gauge build at a glance.
+
+The point of all of this, per the user: it gives the player genuine information to refine strategy and improve their odds — not just flavor. This is a real feature to design and build (data model: each Chao needs a stable id, parent-A/parent-B links, and a persisted record; the player's save needs a per-Chao-id and per-lineage head-to-head history), not implemented yet — tracked in roadmap.md.
 
 ## 7. Multiplayer / async note
 
