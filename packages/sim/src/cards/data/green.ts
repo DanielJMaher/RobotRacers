@@ -80,9 +80,13 @@ export const secondWind: TechniqueCard = {
   flavorText: 'When the legs give out, the will carries the rest of the way.',
   energyCost: 1,
   exileOnUse: false,
+  // Was autoResolveDNF ("never DNF") — removed 2026-08-21 along with DNF
+  // itself (per the user's direct request: "we are not looking for DNFs").
+  // Reflavored to what "Second Wind" describes literally: a real recovery
+  // burst right when things get dire.
   effect: {
-    trigger: { on: 'manual' },
-    apply: [{ op: 'autoResolveDNF', result: 'safe' }],
+    trigger: { on: 'stamina_below', fraction: 0.25 },
+    apply: [{ op: 'restoreStamina', amount: 12 }],
     onceLimit: 'per_race',
   },
 };
@@ -119,9 +123,12 @@ export const tortoiseshellWard: TraitCard = {
   type: 'trait',
   color: 'green',
   flavorText: 'A shell thick enough that the Race itself cannot stop it.',
+  // Was autoResolveDNF ("never DNF") — removed 2026-08-21 along with DNF
+  // itself. Reflavored to the same "cannot be stopped" spirit via a strong,
+  // last-resort Stamina recovery instead of a status immunity.
   effect: {
-    trigger: { on: 'manual' },
-    apply: [{ op: 'autoResolveDNF', result: 'safe' }],
+    trigger: { on: 'stamina_below', fraction: 0.2 },
+    apply: [{ op: 'restoreStamina', amount: 8 }],
     onceLimit: 'per_generation',
   },
 };

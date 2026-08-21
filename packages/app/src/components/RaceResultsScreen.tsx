@@ -61,8 +61,6 @@ export function RaceResultsScreen({ result, onContinue }: RaceResultsScreenProps
         } (${formatSeconds(leg.seconds)})`,
         fumble: !leg.success,
       };
-    } else if (revealedLegs - 1 === playerEntry.timing.legs.length && playerEntry.dnf) {
-      callout = { text: `${playerEntry.name} runs out of Stamina — DNF.`, fumble: true };
     }
   }
 
@@ -87,7 +85,6 @@ export function RaceResultsScreen({ result, onContinue }: RaceResultsScreenProps
             <tbody>
               {watchOrder.map((entry) => {
                 const visibleLegs = entry.timing.legs.slice(0, revealedLegs);
-                const justDnfed = revealedLegs >= entry.timing.legs.length && entry.dnf;
                 return (
                   <tr key={entry.chaoId} className={entry.isPlayer ? 'is-player' : ''}>
                     <td>
@@ -101,7 +98,6 @@ export function RaceResultsScreen({ result, onContinue }: RaceResultsScreenProps
                           {legIndex < visibleLegs.length - 1 ? ', ' : ''}
                         </span>
                       ))}
-                      {justDnfed && <span className="dnf-label"> DNF</span>}
                     </td>
                   </tr>
                 );
@@ -155,16 +151,7 @@ export function RaceResultsScreen({ result, onContinue }: RaceResultsScreenProps
                   {entry.isPlayer ? ' (You)' : ''}
                   {entry.eliminated ? ' (eliminated)' : ''}
                 </td>
-                <td>
-                  {/* A DNF's total only covers legs actually attempted — never a
-                      real finishing time, so it's never shown as if it were one
-                      (a DNF can otherwise look "faster" than the winner). */}
-                  {entry.dnf ? (
-                    <span className="dnf-label">DNF ({formatSeconds(entry.timing.totalSeconds)} before stopping)</span>
-                  ) : (
-                    formatSeconds(entry.timing.totalSeconds)
-                  )}
-                </td>
+                <td>{formatSeconds(entry.timing.totalSeconds)}</td>
                 <td>
                   {entry.timing.legs.map((leg, legIndex) => (
                     <span key={legIndex} className={leg.success ? undefined : 'leg-fumbled'}>

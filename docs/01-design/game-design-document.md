@@ -47,7 +47,7 @@ Same five physical stats as the source material (research §1), all now scoped t
 | Fly | Resolves Air legs and the Flying shortcut fork |
 | Run | Resolves Sprint legs |
 | Power | Resolves Obstacle legs |
-| Stamina | Determines whether a Chao finishes at all (DNF threshold) |
+| Stamina | The Race's HP pool — feeds `stamina_below` Trait/Item triggers and the ranking tiebreak (§6.6). No longer a DNF threshold — DNF was removed 2026-08-21 (§5.1). |
 | **Climb** *(new, 2026-08-20)* | Resolves Climb legs — a genuinely distinct stat from Power, not a reflavor of it (see §5.1) |
 | **Jump** *(new, 2026-08-20)* | Resolves Jump legs — a genuinely distinct stat from Run, not a reflavor of it (see §5.1) |
 
@@ -215,10 +215,10 @@ Resolution, per Leg:
 
 1. Check the Leg's stat against a course-defined difficulty curve (with a small variance roll, not pure determinism — see roadmap.md's tuning notes).
 2. If the Leg has a shortcut fork, resolve it as described above.
-3. **Stamina** decrements each Leg; hitting 0 before the finish is a DNF.
+3. **Stamina** decrements each Leg. It bottoms out at 0 and stays there — it no longer ends the Race early (see below).
 4. Pre-loaded Technique cards fire on trigger, spending the Energy budget set before the Race began (§5.2).
 
-**DNF consequence, revised:** in the original design, a DNF didn't eliminate a Chao from its run — only the final cocoon check mattered. Under the Tournament structure, **a Race directly determines elimination** (last place is out, per §6.2) — so a DNF is likely to *mean* elimination now, since finishing last (or not finishing) in an elimination race ends the Chao's Tournament. This is a meaningful tonal shift from the original design's "a bad Race shouldn't end things on the spot" pillar, and is called out explicitly since it's a direct consequence of the harsher elimination structure the user has chosen (§6.6 confirms this is intentional).
+**DNF removed entirely, 2026-08-21 — per the user's direct request ("remove the entire DNF crap - we are not looking for DNFs").** The paragraph this replaces described a real tonal tension: under the Tournament's elimination structure, a DNF was likely to *mean* elimination, which cut against the original design's "a bad Race shouldn't end things on the spot" pillar. Rather than live with that tension, DNF is gone as a concept — every Chao now attempts every Leg in the course regardless of how low Stamina drops. Ranking (§6.6) still works exactly as before: `legsCompleted` (how many Leg *checks* actually succeeded — independent of Stamina) decides placement first, with leftover Stamina as the tiebreak. A handful of cards that existed purely to prevent or exploit DNF (Second Wind, Tortoiseshell Ward, Second Chance Egg, Perfect Calm) were reflavored to real Stamina-recovery effects instead — see `packages/sim/src/cards/data/*.ts` for the specifics.
 
 **Race timing, added 2026-08-20 (roadmap.md Phase 5.5).** Every Leg now also has a **time**, in seconds to the tenth, shown on a real per-race Results screen (not just log narration) — replacing "check the scrolling log to see how it went" with an actual ranked table. This is a *display-layer* computation only: it doesn't change pass/fail, DNF, elimination, scoring, or ranking, all of which are still exactly the stat-check/Stamina mechanics above. Calibrated so a brand-new, near-zero-stat Gen-1 baby averages roughly **9.0 seconds per Leg** regardless of course length (a real calibration target, not made up per-race) — better stats make a Leg faster, a fumbled Leg costs extra time, harder Legs take longer. Exact constants are a first-draft placeholder, same tuning status as the difficulty/variance numbers above.
 

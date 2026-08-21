@@ -36,6 +36,8 @@ export function App() {
           {game.phase === 'draft' && (
             <DraftScreen
               pack={game.playerPack}
+              seats={game.draft.seats}
+              packsInFront={game.draft.packsInFront}
               currentRound={game.draft.currentRound}
               currentPick={game.draft.currentPick}
               packsPerDraft={game.draft.packsPerDraft}
@@ -78,11 +80,15 @@ export function App() {
                 selectedTechniqueIds={game.selectedTechniqueIds}
                 actionMessage={game.actionMessage}
                 onDismissActionMessage={game.dismissActionMessage}
+                pendingFruitConfirm={game.pendingFruitConfirm}
+                onConfirmPendingFruit={game.confirmPendingFruit}
+                onCancelPendingFruit={game.cancelPendingFruit}
                 onBondCard={game.bondBondCard}
                 onAwakenBondCard={game.awakenBondCard}
                 onConsumePotion={game.consumePotionCard}
                 onBondTrait={game.bondTrait}
                 onUnbondTrait={game.unbondTrait}
+                onAwakenTrait={game.awakenTraitCard}
                 onEquipItem={game.equipItem}
                 onUnequipItem={game.unequipItem}
                 onToggleTechnique={game.toggleTechnique}

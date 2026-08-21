@@ -137,7 +137,6 @@ export interface RaceParticipant {
 }
 
 export interface RaceResult {
-  finished: boolean; // false = DNF
   legsCompleted: number;
   finalChao: Chao;
   events: SimEvent[];
@@ -160,10 +159,9 @@ export function resolveRace(
   // within one checkpoint — added 2026-08-21 alongside that enforcement.
   let firedOnce: ReadonlySet<string> = new Set();
 
-  // 'manual' effects (Second Wind, Tortoiseshell Ward's autoResolveDNF) are
-  // treated as firing once at race start — GDD §6.3 frames them as "loaded
-  // before the event", not tied to an in-race condition, so there's no
-  // later checkpoint for them to wait for.
+  // 'manual' effects (Second Wind) are treated as firing once at race start
+  // — GDD §6.3 frames them as "loaded before the event", not tied to an
+  // in-race condition, so there's no later checkpoint for them to wait for.
   const raceStart = fireTriggers(
     chao,
     participant.loadedTechniques,
@@ -173,10 +171,8 @@ export function resolveRace(
   chao = raceStart.chao;
   events.push(...raceStart.events);
   firedOnce = raceStart.firedOnce;
-  const cannotDNF = raceStart.controlOps.some((op) => op.op === 'autoResolveDNF');
 
   let legsCompleted = 0;
-  let finished = true;
 
   for (const leg of config.legs) {
     const legStart = fireTriggers(chao, participant.loadedTechniques, legStartPredicate(leg.type), firedOnce);
@@ -259,23 +255,17 @@ export function resolveRace(
     chao = staminaBelow.chao;
     events.push(...staminaBelow.events);
     firedOnce = staminaBelow.firedOnce;
-
-    if (chao.currentStamina <= 0 && !cannotDNF) {
-      finished = false;
-      events.push({ type: 'dnf', chaoId: chao.id });
-      break;
-    }
+    // No DNF break here — removed 2026-08-21 per the user's direct request
+    // ("remove the entire DNF crap - we are not looking for DNFs"). Every
+    // Chao now attempts every Leg in the course regardless of how low
+    // Stamina drops; currentStamina still bottoms out at 0 (clamped above)
+    // and still feeds `stamina_below` triggers and the final ranking's
+    // tiebreak (tournament/fieldRace.ts), it just never cuts a Race short.
   }
 
-  const outcome = finished ? 'finished' : 'dnf';
-  const raceEnd = fireTriggers(
-    chao,
-    participant.loadedTechniques,
-    (t) => t.on === 'race_end' && (t.outcome === undefined || t.outcome === outcome),
-    firedOnce,
-  );
+  const raceEnd = fireTriggers(chao, participant.loadedTechniques, (t) => t.on === 'race_end', firedOnce);
   chao = raceEnd.chao;
   events.push(...raceEnd.events);
 
-  return { finished, legsCompleted, finalChao: chao, events };
+  return { legsCompleted, finalChao: chao, events };
 }

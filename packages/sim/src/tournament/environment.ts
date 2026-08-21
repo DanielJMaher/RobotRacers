@@ -2,6 +2,7 @@ import type { Rng } from '../rng';
 import type { BondCard, Chao, HabitatCard, ItemCard, PotionCard, Rarity, SeedCard, SimEvent, StatColor, TraitCard } from '../types';
 import {
   awakenBondCard,
+  awakenTrait,
   bondCard,
   type BondResult,
   bondTrait,
@@ -191,6 +192,15 @@ export function canPlantSeed(environment: Environment, slotIndex: number): boole
   return slot !== undefined && slot.plantedSeedColors.length < slot.seedSlots;
 }
 
+// Immediate Fruit a freshly-planted Seed pays out on the spot, on top of
+// converting the slot's future output — added 2026-08-21 per the user's
+// direct request ("after applying a seed you should get that fruit
+// immediately"): before this, planting only ever changed what a FUTURE
+// triggerFruitGain/triggerInitialFruitGain call would produce, so a planted
+// Seed visibly did nothing until the next race — a real, confusing delay
+// for what reads as an immediate action.
+const SEED_IMMEDIATE_FRUIT = 1;
+
 // Plants one of the still-available drafted Seed cards into a filled slot
 // with an open Seed slot (GDD §6.9) — one-time, removes the Seed from
 // `availableSeeds` so it can't be replanted elsewhere.
@@ -208,6 +218,7 @@ export function plantSeed(environment: Environment, seedIndex: number, slotIndex
     ...environment,
     slots: environment.slots.map((s, i) => (i === slotIndex ? nextSlot : s)),
     availableSeeds: environment.availableSeeds.filter((_, i) => i !== seedIndex),
+    fruit: { ...environment.fruit, [seed.color]: environment.fruit[seed.color] + SEED_IMMEDIATE_FRUIT },
   };
 }
 
@@ -485,6 +496,60 @@ export function bondTraitWithCost(
   const { chao: bonded, events } = bondTrait(chao, card);
   return {
     chao: bonded,
+    environment: { ...environment, fruit: charge.fruit },
+    events,
+    ok: true,
+    costPaid: cost,
+    costFromColorless: charge.baseCostFromColorless,
+    taxPaid: tax,
+  };
+}
+
+export interface TraitAwakenCostResult {
+  chao: Chao;
+  environment: Environment;
+  events: SimEvent[];
+  ok: boolean;
+  reason?: 'insufficient_fruit' | 'slots_full';
+  costPaid: number;
+  costFromColorless: number;
+  taxPaid: number;
+}
+
+// Awakens a Trait Card (added 2026-08-21, per the user's direct bug report:
+// "awakenning traits didnt seem to work (3 mirage steps)" — Trait Awakening
+// never existed at all before this; only Bond Cards had it). Same cost
+// pattern as awakenBondCardWithCost — 3x the base Fruit cost (fusing 3
+// copies at once) in the card's own color, plus one splash-tax charge if
+// off-identity — plus the same MAX_TRAITS room check bondTraitWithCost
+// does, checked (and failed, if relevant) BEFORE any Fruit is charged.
+export function awakenTraitWithCost(
+  chao: Chao,
+  environment: Environment,
+  card: TraitCard,
+  baseTax: number,
+): TraitAwakenCostResult {
+  if (chao.traits.length >= MAX_TRAITS) {
+    return { chao, environment, events: [], ok: false, reason: 'slots_full', costPaid: 0, costFromColorless: 0, taxPaid: 0 };
+  }
+  const cost = FRUIT_COST_BY_RARITY[card.rarity] * AWAKEN_COST_MULTIPLIER;
+  const tax = computeSplashTax(chao, card, baseTax);
+  const charge = chargeFruit(environment.fruit, card.color, cost, tax);
+  if (!charge.ok) {
+    return {
+      chao,
+      environment,
+      events: [],
+      ok: false,
+      reason: 'insufficient_fruit',
+      costPaid: 0,
+      costFromColorless: 0,
+      taxPaid: 0,
+    };
+  }
+  const { chao: awakened, events } = awakenTrait(chao, card);
+  return {
+    chao: awakened,
     environment: { ...environment, fruit: charge.fruit },
     events,
     ok: true,

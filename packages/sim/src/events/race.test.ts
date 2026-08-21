@@ -22,12 +22,11 @@ describe('resolveRace', () => {
 
     const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
 
-    expect(result.finished).toBe(true);
     expect(result.legsCompleted).toBe(3);
     expect(result.events.filter((e) => e.type === 'leg_result' && e.success)).toHaveLength(3);
   });
 
-  it('DNFs once Stamina runs out before the course ends', () => {
+  it('keeps attempting every Leg even after Stamina is fully exhausted (DNF removed 2026-08-21)', () => {
     const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const chao = { ...base, stats: { ...base.stats, run: 50, stamina: 8 } };
     const config: RaceConfig = {
@@ -40,8 +39,11 @@ describe('resolveRace', () => {
 
     const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
 
-    expect(result.finished).toBe(false);
-    expect(result.events.some((e) => e.type === 'dnf')).toBe(true);
+    // All 3 legs attempted (and cleared — run=50 vs. difficulty 10 easily
+    // succeeds regardless of Stamina) despite Stamina running out well
+    // before the course ends; currentStamina bottoms out at 0, never below.
+    expect(result.legsCompleted).toBe(3);
+    expect(result.finalChao.currentStamina).toBe(0);
   });
 
   it('takes the shortcut fork when the Chao clears the shortcut threshold', () => {
@@ -65,7 +67,6 @@ describe('resolveRace', () => {
     // whereas the normal Sprint check (run=0 vs difficulty 200) could not
     // possibly succeed. Completing the leg proves the fork was taken.
     expect(result.legsCompleted).toBe(1);
-    expect(result.finished).toBe(true);
   });
 
   it('takes the normal path when the shortcut threshold is not met', () => {
@@ -87,7 +88,6 @@ describe('resolveRace', () => {
     // fly=0 can never clear a threshold of 200, forcing the normal path;
     // run=100 vs difficulty 10 succeeds easily there.
     expect(result.legsCompleted).toBe(1);
-    expect(result.finished).toBe(true);
   });
 
   it("applies a Bond Card keyword's restoreStamina during the race (Graze)", () => {
@@ -145,7 +145,6 @@ describe('resolveRace', () => {
     const resultA = resolveRace({ chao, loadedTechniques: [] }, config, createRng(77));
     const resultB = resolveRace({ chao, loadedTechniques: [] }, config, createRng(77));
 
-    expect(resultA.finished).toBe(resultB.finished);
     expect(resultA.legsCompleted).toBe(resultB.legsCompleted);
     expect(resultA.events).toEqual(resultB.events);
   });
@@ -255,7 +254,7 @@ describe('resolveRace — Trait/Item engine hooks (added 2026-08-21)', () => {
     );
   });
 
-  it('fires a race_end Trait scoped to "finished" only when the race actually finishes', () => {
+  it('fires a race_end Trait once, at the very end of the Race', () => {
     const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const trait: TraitCard = {
       id: 'trait.test_race_end',
@@ -263,17 +262,16 @@ describe('resolveRace — Trait/Item engine hooks (added 2026-08-21)', () => {
       rarity: 'common',
       type: 'trait',
       color: 'white',
-      effect: { trigger: { on: 'race_end', outcome: 'finished' }, apply: [{ op: 'grantFruit', amount: 4 }] },
+      effect: { trigger: { on: 'race_end' }, apply: [{ op: 'grantFruit', amount: 4 }] },
     };
-    const finishingChao = { ...base, stats: { ...base.stats, run: 50, stamina: 100 }, traits: [trait] };
-    const dnfChao = { ...base, stats: { ...base.stats, run: 50, stamina: 4 }, traits: [trait] };
+    // Even a Chao that fully exhausts its Stamina still reaches race_end —
+    // there's no DNF short-circuit anymore (removed 2026-08-21) to skip it.
+    const chao = { ...base, stats: { ...base.stats, run: 50, stamina: 4 }, traits: [trait] };
     const config: RaceConfig = { legs: [{ type: 'sprint', difficulty: 10, staminaCost: 5 }] };
 
-    const finished = resolveRace({ chao: finishingChao, loadedTechniques: [] }, config, createRng(1));
-    const dnf = resolveRace({ chao: dnfChao, loadedTechniques: [] }, config, createRng(1));
+    const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
 
-    expect(finished.events).toContainEqual({ type: 'fruit_gained', amount: 4, reason: trait.id });
-    expect(dnf.events).not.toContainEqual({ type: 'fruit_gained', amount: 4, reason: trait.id });
+    expect(result.events).toContainEqual({ type: 'fruit_gained', amount: 4, reason: trait.id });
   });
 });
 

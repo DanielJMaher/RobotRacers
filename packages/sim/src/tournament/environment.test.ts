@@ -11,6 +11,7 @@ import {
   addAvailableSeed,
   applyFruitEvents,
   awakenBondCardWithCost,
+  awakenTraitWithCost,
   bondCardWithSplashTax,
   bondTraitWithCost,
   consumePotionWithCost,
@@ -78,6 +79,12 @@ describe('plantSeed', () => {
     const seeded = plantSeed(env, 0, 0);
     expect(seeded.slots[0]?.plantedSeedColors).toEqual(['black']); // cinderSeed is black
     expect(seeded.availableSeeds).toEqual([]);
+  });
+
+  it('credits 1 Fruit of the Seed color immediately on planting', () => {
+    const env = addAvailableSeed(placeHabitatCard(createEnvironment([sunlitMeadow]), 0, 0), cinderSeed);
+    const seeded = plantSeed(env, 0, 0);
+    expect(seeded.fruit.black).toBe(1); // cinderSeed is black
   });
 
   it('throws when planting into an empty (Open Fort) slot', () => {
@@ -185,8 +192,10 @@ describe('triggerFruitGain', () => {
       0,
     );
     // 1 native green unit + 1 converted black unit (from the 2 the slot would
-    // otherwise produce), plus 2 Open Fort colorless.
-    expect(triggerFruitGain(seeded).fruit).toEqual({ ...EMPTY_FRUIT, green: 1, black: 1, colorless: 2 });
+    // otherwise produce) from this trigger, plus the immediate +1 black
+    // planting bonus (plantSeed, added 2026-08-21 — "get that fruit
+    // immediately"), plus 2 Open Fort colorless.
+    expect(triggerFruitGain(seeded).fruit).toEqual({ ...EMPTY_FRUIT, green: 1, black: 2, colorless: 2 });
   });
 
   it('never converts the last native-color unit — a 1-star Habitat always keeps at least 1 of its own color', () => {
@@ -403,6 +412,40 @@ describe('bondTraitWithCost', () => {
   });
 });
 
+describe('awakenTraitWithCost', () => {
+  it('pays 3x the base cost in the Trait\'s own color and bonds one fused entry', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const env = withFruit(createEnvironment([]), { green: 3 }); // common * 3
+    const result = awakenTraitWithCost(chao, env, testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(true);
+    expect(result.costPaid).toBe(3);
+    expect(result.environment.fruit.green).toBe(0);
+    expect(result.chao.traits).toHaveLength(1);
+    expect(result.chao.traits[0]!.id).toBe(`${testTrait.id}.awakened`);
+  });
+
+  it('blocks on insufficient Fruit without touching traits', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const result = awakenTraitWithCost(chao, createEnvironment([]), testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('insufficient_fruit');
+    expect(result.chao.traits).toEqual([]);
+  });
+
+  it('blocks on a full Trait roster before ever charging Fruit', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const full = { ...chao, traits: [testTrait, { ...testTrait, id: 'trait.other' }] };
+    const env = withFruit(createEnvironment([]), { green: 10 });
+    const result = awakenTraitWithCost(full, env, testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('slots_full');
+    expect(result.environment.fruit.green).toBe(10); // untouched — never charged
+  });
+});
+
 const testItem: ItemCard = {
   id: 'item.test_env_cost',
   name: 'Test Item',
@@ -447,7 +490,9 @@ describe('applyFruitEvents', () => {
 
   it('leaves Fruit untouched when there are no fruit_gained events', () => {
     const env = withFruit(createEnvironment([]), { green: 4 });
-    const next = applyFruitEvents(env, [{ type: 'dnf', chaoId: 'c1' }]);
+    const next = applyFruitEvents(env, [
+      { type: 'leg_result', chaoId: 'c1', legType: 'sprint', success: true, stat: 'run', difficulty: 10 },
+    ]);
     expect(next.fruit).toEqual(env.fruit);
   });
 });

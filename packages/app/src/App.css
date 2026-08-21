@@ -38,6 +38,29 @@ body {
   margin-bottom: 1rem;
 }
 
+.seat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.seat-tab {
+  background: #232837;
+  border: 1px solid #3a4152;
+  border-radius: 6px;
+  color: #c7ccd6;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.seat-tab-active {
+  background: #2f3b52;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
 .card-badge {
   width: 150px;
   min-height: 110px;
@@ -309,11 +332,6 @@ body {
   color: #f59e0b;
 }
 
-.dnf-label {
-  color: #ef4444;
-  font-weight: bold;
-}
-
 .race-results-table tr.is-player {
   background: #20304a;
 }
@@ -366,4 +384,22 @@ body {
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
+}
+
+.wildcard-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.wildcard-confirm-dialog {
+  background: #1f2430;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1.25rem;
+  max-width: 24rem;
 }

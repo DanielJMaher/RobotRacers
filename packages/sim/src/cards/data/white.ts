@@ -120,9 +120,12 @@ export const stillWaters: TraitCard = {
     // condition (whole-Race event history isn't visible to a single
     // TriggerCondition predicate). This is the card that directly motivated
     // adding a real `race_end` trigger (types.ts, 2026-08-21): simplified to
-    // "on finishing the Race" — still true to "Still Waters" as a reward
-    // for a calm, uneventful finish, just without the Technique condition.
-    trigger: { on: 'race_end', outcome: 'finished' },
+    // "at the end of the Race" — still true to "Still Waters" as a reward
+    // for a calm finish, just without the Technique condition. `race_end`
+    // originally carried an `outcome: 'finished' | 'dnf'` field this card
+    // set to 'finished'; removed the same day DNF itself was removed, since
+    // every Race now always finishes.
+    trigger: { on: 'race_end' },
     apply: [{ op: 'grantFruit', amount: 4 }],
   },
 };
@@ -233,15 +236,13 @@ export const perfectCalm: TechniqueCard = {
   energyCost: 3,
   exileOnUse: true,
   effect: {
-    // Was autoResolveDNF (kept — genuinely live) plus "auto-wins any single
-    // Leg of your choice" — no player-facing "pick a Leg" selection exists
-    // anywhere in the resolver, so that half was always dead. Replaced with
-    // a real permanent Swim surge instead of a fake choice mechanic.
+    // Was autoResolveDNF plus "auto-wins any single Leg of your choice" — no
+    // player-facing "pick a Leg" selection exists anywhere in the resolver,
+    // so that half was always dead, and DNF itself was removed 2026-08-21.
+    // Replaced with a single, bigger permanent Swim surge — its legendary
+    // tier's most direct honest translation.
     trigger: { on: 'race_start' },
-    apply: [
-      { op: 'autoResolveDNF', result: 'safe' },
-      { op: 'modifyStat', stat: 'swim', amount: 6 },
-    ],
+    apply: [{ op: 'modifyStat', stat: 'swim', amount: 10 }],
   },
 };
 

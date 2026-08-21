@@ -9,11 +9,15 @@ interface GardenScreenProps {
   selectedTechniqueIds: Set<string>;
   actionMessage: string | null;
   onDismissActionMessage: () => void;
+  pendingFruitConfirm: { message: string } | null;
+  onConfirmPendingFruit: () => void;
+  onCancelPendingFruit: () => void;
   onBondCard: (card: BondCard, poolIndex: number) => void;
   onAwakenBondCard: (card: BondCard, poolIndices: [number, number, number]) => void;
   onConsumePotion: (card: PotionCard, poolIndex: number) => void;
   onBondTrait: (card: TraitCard) => void;
   onUnbondTrait: (card: TraitCard) => void;
+  onAwakenTrait: (card: TraitCard, poolIndices: [number, number, number]) => void;
   onEquipItem: (card: ItemCard) => void;
   onUnequipItem: (card: ItemCard) => void;
   onToggleTechnique: (id: string) => void;
@@ -68,11 +72,15 @@ export function GardenScreen({
   selectedTechniqueIds,
   actionMessage,
   onDismissActionMessage,
+  pendingFruitConfirm,
+  onConfirmPendingFruit,
+  onCancelPendingFruit,
   onBondCard,
   onAwakenBondCard,
   onConsumePotion,
   onBondTrait,
   onUnbondTrait,
+  onAwakenTrait,
   onEquipItem,
   onUnequipItem,
   onToggleTechnique,
@@ -131,8 +139,50 @@ export function GardenScreen({
       return acc;
     }, []);
 
+  // Trait Awakening (added 2026-08-21 — same 3-copies-fuse-into-1 mechanic
+  // as Bond Cards above, extended to Traits per the user's direct bug
+  // report: "awakenning traits didnt seem to work (3 mirage steps)"). Only
+  // copies that are neither already spent NOR currently equipped are
+  // eligible — an equipped copy is "in use," not a spare to fuse away.
+  const awakenableTraitEntries = traitEntries.filter(
+    ({ poolIndex, equipped }) => !usedPoolIndices.has(poolIndex) && !equipped,
+  );
+  const traitAwakeningGroups = new Map<string, number[]>();
+  for (const { card, poolIndex } of awakenableTraitEntries) {
+    const indices = traitAwakeningGroups.get(card.id) ?? [];
+    indices.push(poolIndex);
+    traitAwakeningGroups.set(card.id, indices);
+  }
+  const awakenableTraits = awakenableTraitEntries
+    .filter(({ card }) => (traitAwakeningGroups.get(card.id)?.length ?? 0) >= AWAKENING_COPIES_NEEDED)
+    .reduce<{ card: TraitCard; poolIndices: [number, number, number] }[]>((acc, { card }) => {
+      if (acc.some((entry) => entry.card.id === card.id)) return acc;
+      const indices = traitAwakeningGroups.get(card.id)!.slice(0, AWAKENING_COPIES_NEEDED) as [number, number, number];
+      acc.push({ card, poolIndices: indices });
+      return acc;
+    }, []);
+
   return (
     <section className="garden">
+      {/* Wildcard Fruit confirmation (added 2026-08-21, per the user's direct
+          request: "if a player is about to use that give them a confimration
+          pop up") — blocks the whole Garden screen until answered, since it
+          gates a real spend rather than just informing about one. */}
+      {pendingFruitConfirm && (
+        <div className="wildcard-confirm-overlay">
+          <div className="wildcard-confirm-dialog">
+            <p>{pendingFruitConfirm.message}</p>
+            <div className="event-buttons">
+              <button type="button" onClick={onConfirmPendingFruit}>
+                Spend it
+              </button>
+              <button type="button" onClick={onCancelPendingFruit}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="garden-column">
         <h2>{chao.name}</h2>
         <p>
@@ -240,6 +290,26 @@ export function GardenScreen({
             />
           ))}
         </div>
+
+        {awakenableTraits.length > 0 && (
+          <>
+            <h3>Awakening Available (Traits)</h3>
+            <ul className="standings-list">
+              {awakenableTraits.map(({ card, poolIndices }) => (
+                <li key={card.id}>
+                  <span>{card.name} — 3.5x the effect, fused into 1</span>
+                  <button
+                    type="button"
+                    className="slot-assign-btn"
+                    onClick={() => onAwakenTrait(card, poolIndices)}
+                  >
+                    Awaken (uses 3)
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
 
         <h3>Items ({chao.items.length} equipped)</h3>
         <p className="hint-text">

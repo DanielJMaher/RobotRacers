@@ -19,8 +19,6 @@ export function narrateSimEvent(event: SimEvent, nameById?: Record<string, strin
       return event.success
         ? `${name(event.chaoId)} clears the ${event.legType} leg!`
         : `${name(event.chaoId)} fumbles the ${event.legType} leg.`;
-    case 'dnf':
-      return `${name(event.chaoId)} runs out of Stamina and does not finish.`;
     case 'technique_fired':
       return `Technique ${event.cardId} activates on ${name(event.chaoId)}.`;
     case 'trait_fired':
@@ -61,11 +59,7 @@ function describeTrigger(trigger: TriggerCondition): string {
     case 'race_start':
       return 'At Race start';
     case 'race_end':
-      return trigger.outcome === 'finished'
-        ? 'On finishing the Race'
-        : trigger.outcome === 'dnf'
-          ? 'On DNF'
-          : 'At Race end';
+      return 'At Race end';
     case 'manual':
       return 'Loaded before the Race';
     // Bout-only, dormant triggers (Karate Bout was removed 2026-08-20) —
@@ -96,8 +90,6 @@ function describeOp(op: EffectOp): string {
       return `+${op.amount} Fruit`;
     case 'autoWinLeg':
       return 'auto-clear the Leg';
-    case 'autoResolveDNF':
-      return 'never DNF';
     case 'grantAlternateRoute':
       return `check ${op.altStat} instead on ${op.legType} Legs`;
     // Bout-only, dormant ops — same status as the Bout-only triggers above.

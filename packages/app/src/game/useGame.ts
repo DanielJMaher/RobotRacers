@@ -22,6 +22,7 @@ import {
   advanceTick,
   applyFruitEvents,
   awakenBondCardWithCost,
+  awakenTraitWithCost,
   bondCardWithSplashTax,
   bondTraitWithCost,
   buildCardPool,
@@ -58,13 +59,6 @@ export interface RaceResultEntry {
   name: string;
   isPlayer: boolean;
   eliminated: boolean;
-  // A DNF's totalSeconds only covers the legs it actually attempted before
-  // running out of Stamina — never comparable to a finisher's total time
-  // (an early DNF can look "faster" than the winner). Surfaced separately
-  // so the UI never presents a DNF's partial time as if it were a real
-  // result (playtest-prep fix, 2026-08-21 — caught by review before a live
-  // playtest: the Results table had no DNF indicator at all).
-  dnf: boolean;
   timing: ReturnType<typeof computeRaceTiming>;
 }
 
@@ -87,7 +81,6 @@ function buildRaceResultEntries(
       name: nameById[chaoId] ?? chaoId,
       isPlayer: chaoId === playerChaoId,
       eliminated: chaoId === eliminatedChaoId,
-      dnf: !result.finished,
       timing: computeRaceTiming(result.finalChao, result.events),
     };
   });
@@ -188,6 +181,36 @@ export function useGame() {
   // looked exactly like clicking nothing at all. Surfaced right above the
   // Bond Cards grid instead; cleared on the next successful bond.
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  // Wildcard (colorless) Fruit confirmation (added 2026-08-21, per the
+  // user's direct request: "Uncolored fruits are wild card and can be used
+  // for any color, so if a player is about to use that give them a
+  // confimration pop up"). Every cost-paying action below computes its
+  // result eagerly (a pure function of the current chao/environment, safe
+  // to compute without committing) and, ONLY if that result would actually
+  // draw on colorless Fruit, defers the real state commit into `onConfirm`
+  // here instead of applying it immediately — the confirm/cancel buttons
+  // (GardenScreen) either run that closure or drop it entirely, so
+  // canceling truly spends nothing.
+  const [pendingFruitConfirm, setPendingFruitConfirm] = useState<{ message: string; onConfirm: () => void } | null>(
+    null,
+  );
+  const confirmPendingFruit = useCallback(() => {
+    pendingFruitConfirm?.onConfirm();
+    setPendingFruitConfirm(null);
+  }, [pendingFruitConfirm]);
+  const cancelPendingFruit = useCallback(() => {
+    setPendingFruitConfirm(null);
+  }, []);
+  // Shared by every cost-paying action below: runs `commit` immediately if
+  // the action's cost never touched Wildcard/colorless Fruit, otherwise
+  // defers it behind the confirmation banner instead.
+  const gateOnWildcard = useCallback((usesWildcard: boolean, message: string, commit: () => void) => {
+    if (usesWildcard) {
+      setPendingFruitConfirm({ message, onConfirm: commit });
+      return;
+    }
+    commit();
+  }, []);
 
   const appendLog = useCallback((lines: string[]) => {
     if (lines.length === 0) return;
@@ -319,26 +342,36 @@ export function useGame() {
         return;
       }
 
-      setActionMessage(null);
-      setTournament({
-        ...tournament,
-        entrants: {
-          ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
-        },
-      });
-      setEnvironment(result.environment);
-      // Bond Cards are one-time use: this specific drafted copy is spent the
-      // moment it's bonded, never bondable again.
-      setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
-      // Bonding is cumulative now (GDD §3.5, corrected 2026-08-20) — this
-      // always adds, never replaces, so the log just names the touched
-      // regions rather than talking about a slot being occupied/replaced.
       const regions = Object.keys(card.bodyMutations).join(', ');
       const costNote = formatCostNote(card.color, result.baseCostPaid, result.baseCostFromColorless, result.taxPaid);
-      appendLog([`${card.name} bonds onto ${regions}${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        // Bond Cards are one-time use: this specific drafted copy is spent
+        // the moment it's bonded, never bondable again.
+        setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
+        // Bonding is cumulative now (GDD §3.5, corrected 2026-08-20) — this
+        // always adds, never replaces, so the log just names the touched
+        // regions rather than talking about a slot being occupied/replaced.
+        appendLog([
+          `${card.name} bonds onto ${regions}${costNote} — spent.`,
+          ...result.events.map((e) => narrateSimEvent(e)),
+        ]);
+      };
+      gateOnWildcard(
+        result.baseCostFromColorless > 0 || result.taxPaid > 0,
+        `Bonding ${card.name} will spend Wildcard Fruit${costNote}. Continue?`,
+        commit,
+      );
     },
-    [tournament, environment, appendLog],
+    [tournament, environment, appendLog, gateOnWildcard],
   );
 
   const awakenBondCard = useCallback(
@@ -356,28 +389,35 @@ export function useGame() {
         return;
       }
 
-      setActionMessage(null);
-      setTournament({
-        ...tournament,
-        entrants: {
-          ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
-        },
-      });
-      setEnvironment(result.environment);
-      setUsedPoolIndices((prev) => {
-        const next = new Set(prev);
-        for (const i of poolIndices) next.add(i);
-        return next;
-      });
       const regions = Object.keys(card.bodyMutations).join(', ');
       const costNote = formatCostNote(card.color, result.baseCostPaid, result.baseCostFromColorless, result.taxPaid);
-      appendLog([
-        `★ ${card.name} Awakened!${costNote} 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
-        ...result.events.map((e) => narrateSimEvent(e)),
-      ]);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        setUsedPoolIndices((prev) => {
+          const next = new Set(prev);
+          for (const i of poolIndices) next.add(i);
+          return next;
+        });
+        appendLog([
+          `★ ${card.name} Awakened!${costNote} 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
+          ...result.events.map((e) => narrateSimEvent(e)),
+        ]);
+      };
+      gateOnWildcard(
+        result.baseCostFromColorless > 0 || result.taxPaid > 0,
+        `Awakening ${card.name} will spend Wildcard Fruit${costNote}. Continue?`,
+        commit,
+      );
     },
-    [tournament, environment, appendLog],
+    [tournament, environment, appendLog, gateOnWildcard],
   );
 
   const consumePotionCard = useCallback(
@@ -394,22 +434,29 @@ export function useGame() {
         return;
       }
 
-      setActionMessage(null);
-      setTournament({
-        ...tournament,
-        entrants: {
-          ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
-        },
-      });
-      setEnvironment(result.environment);
-      // Potions are one-time use, same as Bond Cards (roadmap.md Phase 5.5) —
-      // this specific drafted copy is spent the moment it's consumed.
-      setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
       const costNote = formatCostNote(card.color, result.costPaid, result.costFromColorless, 0);
-      appendLog([`${card.name} is consumed${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        // Potions are one-time use, same as Bond Cards (roadmap.md Phase
+        // 5.5) — this specific drafted copy is spent the moment it's consumed.
+        setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
+        appendLog([`${card.name} is consumed${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
+      };
+      gateOnWildcard(
+        result.costFromColorless > 0,
+        `Drinking ${card.name} will spend Wildcard Fruit${costNote}. Continue?`,
+        commit,
+      );
     },
-    [tournament, environment, appendLog],
+    [tournament, environment, appendLog, gateOnWildcard],
   );
 
   // Trait/Item bonding (added 2026-08-21 — until now chao.traits/chao.items
@@ -438,19 +485,26 @@ export function useGame() {
         return;
       }
 
-      setActionMessage(null);
-      setTournament({
-        ...tournament,
-        entrants: {
-          ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
-        },
-      });
-      setEnvironment(result.environment);
       const costNote = formatCostNote(card.color, result.costPaid, result.costFromColorless, result.taxPaid);
-      appendLog([`${card.name} bonds as a Trait${costNote}.`]);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        appendLog([`${card.name} bonds as a Trait${costNote}.`]);
+      };
+      gateOnWildcard(
+        result.costFromColorless > 0 || result.taxPaid > 0,
+        `Bonding ${card.name} will spend Wildcard Fruit${costNote}. Continue?`,
+        commit,
+      );
     },
-    [tournament, environment, appendLog],
+    [tournament, environment, appendLog, gateOnWildcard],
   );
 
   const unbondTrait = useCallback(
@@ -470,6 +524,56 @@ export function useGame() {
     [tournament, appendLog],
   );
 
+  // Trait Awakening (added 2026-08-21, per the user's direct bug report:
+  // "awakenning traits didnt seem to work (3 mirage steps)" — Awakening
+  // never existed for Traits at all before this, only Bond Cards). Same
+  // shape as awakenBondCard above: `poolIndices` are marked used/spent
+  // (unlike a normal single-copy Trait bond, which never touches
+  // usedPoolIndices) — the 3 fused copies are genuinely consumed, even
+  // though ordinary Trait equip/unequip stays freely reversible.
+  const awakenTraitCard = useCallback(
+    (card: TraitCard, poolIndices: [number, number, number]) => {
+      if (!tournament || !environment) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const result = awakenTraitWithCost(playerChao, environment, card, DEFAULT_SPLASH_TAX);
+
+      if (!result.ok) {
+        const message =
+          result.reason === 'slots_full'
+            ? `Can't Awaken ${card.name} — only ${MAX_TRAITS} Traits can be active at once. Unbond one first.`
+            : `Can't Awaken ${card.name} — needs ${describeFruitShortfall(environment, card.color, FRUIT_COST_BY_RARITY[card.rarity] * 3, computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX))}.`;
+        setActionMessage(message);
+        appendLog([message]);
+        return;
+      }
+
+      const costNote = formatCostNote(card.color, result.costPaid, result.costFromColorless, result.taxPaid);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        setUsedPoolIndices((prev) => {
+          const next = new Set(prev);
+          for (const i of poolIndices) next.add(i);
+          return next;
+        });
+        appendLog([`★ ${card.name} Awakened as a Trait!${costNote} 3 copies fused into 1 (3.5x effect) — all 3 spent.`]);
+      };
+      gateOnWildcard(
+        result.costFromColorless > 0 || result.taxPaid > 0,
+        `Awakening ${card.name} will spend Wildcard Fruit${costNote}. Continue?`,
+        commit,
+      );
+    },
+    [tournament, environment, appendLog, gateOnWildcard],
+  );
+
   const equipItem = useCallback(
     (card: ItemCard) => {
       if (!tournament || !environment) return;
@@ -484,18 +588,28 @@ export function useGame() {
         return;
       }
 
-      setActionMessage(null);
-      setTournament({
-        ...tournament,
-        entrants: {
-          ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
-        },
-      });
-      setEnvironment(result.environment);
-      appendLog([`${card.name} equipped (paid ${result.costPaid} Wildcard Fruit).`]);
+      const commit = () => {
+        setActionMessage(null);
+        setTournament({
+          ...tournament,
+          entrants: {
+            ...tournament.entrants,
+            [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+          },
+        });
+        setEnvironment(result.environment);
+        appendLog([`${card.name} equipped (paid ${result.costPaid} Wildcard Fruit).`]);
+      };
+      // Items always pay from colorless (ItemCard.color is always
+      // 'colorless' — no "own color" bucket exists for them at all), so
+      // every successful equip uses Wildcard Fruit, always confirmed.
+      gateOnWildcard(
+        true,
+        `Equipping ${card.name} will spend ${result.costPaid} Wildcard Fruit. Continue?`,
+        commit,
+      );
     },
-    [tournament, environment, appendLog],
+    [tournament, environment, appendLog, gateOnWildcard],
   );
 
   const unequipItem = useCallback(
@@ -734,6 +848,9 @@ export function useGame() {
     dismissRaceResult,
     actionMessage,
     dismissActionMessage,
+    pendingFruitConfirm,
+    confirmPendingFruit,
+    cancelPendingFruit,
     selectedTechniqueIds,
     log,
     pickCard,
@@ -744,6 +861,7 @@ export function useGame() {
     consumePotionCard,
     bondTrait,
     unbondTrait,
+    awakenTraitCard,
     equipItem,
     unequipItem,
     plantSeed,

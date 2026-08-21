@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { rollInRange } from '../rng';
-import type { BondCard, BondedCard, Chao, ItemCard, PotionCard, RolledStatGrant, SimEvent, TraitCard } from '../types';
+import type { BondCard, BondedCard, Chao, EffectOp, ItemCard, PotionCard, RolledStatGrant, SimEvent, TraitCard } from '../types';
 import { recomputeDerived } from './derived';
 
 export interface BondResult {
@@ -129,6 +129,43 @@ export const MAX_TRAITS = 2;
 // layer already owns.
 export function bondTrait(chao: Chao, card: TraitCard): { chao: Chao; events: SimEvent[] } {
   return { chao: recomputeDerived({ ...chao, traits: [...chao.traits, card] }), events: [] };
+}
+
+// Amplifies one EffectOp's numeric amount by AWAKENING_MULTIPLIER, same
+// 3.5x scaling awakenBondCard applies to a Bond Card's stat grants — added
+// 2026-08-21 for Trait Awakening, per the user's direct bug report ("3
+// mirage steps" — 3 copies of a Trait had no way to fuse at all; Awakening
+// only ever existed for Bond Cards). Ops with no numeric amount to scale
+// (autoWinLeg, grantAlternateRoute, custom) pass through unchanged — an
+// Awakened Trait using one of those is still a real upgrade in the sense
+// that fusing 3 copies into 1 frees 2 Trait slots for something else, even
+// without a bigger number to show for it.
+function amplifyEffectOp(op: EffectOp): EffectOp {
+  switch (op.op) {
+    case 'modifyStat':
+    case 'restoreStamina':
+    case 'grantFruit':
+      return { ...op, amount: Math.round(op.amount * AWAKENING_MULTIPLIER) };
+    default:
+      return op;
+  }
+}
+
+// Awakens a Trait Card (GDD §4.6's Bond Card mechanic, extended to Traits
+// 2026-08-21): 3 copies fuse into one Trait whose numeric effect is scaled
+// by the same 3.5x multiplier awakenBondCard uses, still just ONE entry in
+// chao.traits (still costs a Trait slot, still swappable via unbondTrait —
+// Traits were never permanent/cumulative the way Bond Cards are, so there's
+// no history-entry/`awakened` flag to set here; the amplified TraitCard
+// itself, with a distinguishing id, is the only record).
+export function awakenTrait(chao: Chao, card: TraitCard): { chao: Chao; events: SimEvent[] } {
+  const amplified: TraitCard = {
+    ...card,
+    id: `${card.id}.awakened`,
+    name: `★ ${card.name}`,
+    effect: { ...card.effect, apply: card.effect.apply.map(amplifyEffectOp) },
+  };
+  return bondTrait(chao, amplified);
 }
 
 // Unbonds one Trait by card id (the first match, if the same Trait is

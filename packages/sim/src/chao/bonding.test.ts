@@ -6,6 +6,7 @@ import { createRng } from '../rng';
 import type { ItemCard, TraitCard } from '../types';
 import {
   awakenBondCard,
+  awakenTrait,
   bondCard,
   bondTrait,
   computeSplashTax,
@@ -200,6 +201,40 @@ describe('bondTrait / unbondTrait', () => {
   it('is a no-op when the given id is not currently bonded', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     expect(unbondTrait(chao, 'trait.nope')).toEqual(chao);
+  });
+});
+
+describe('awakenTrait', () => {
+  it('scales a numeric EffectOp by 3.5x (rounded) and bonds one fused entry', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_awaken',
+      name: 'Test Awaken Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'blue',
+      effect: { trigger: { on: 'leg_won' }, apply: [{ op: 'restoreStamina', amount: 3 }] },
+    };
+    const { chao: awakened, events } = awakenTrait(chao, trait);
+    expect(awakened.traits).toHaveLength(1);
+    const fused = awakened.traits[0]!;
+    expect(fused.id).toBe('trait.test_awaken.awakened');
+    expect(fused.effect.apply).toEqual([{ op: 'restoreStamina', amount: 11 }]); // 3 * 3.5 = 10.5 -> rounds to 11
+    expect(events).toEqual([]);
+  });
+
+  it('passes through ops with no numeric amount unchanged (e.g. autoWinLeg)', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_awaken_autowin',
+      name: 'Test Autowin Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'red',
+      effect: { trigger: { on: 'leg_start' }, apply: [{ op: 'autoWinLeg' }] },
+    };
+    const { chao: awakened } = awakenTrait(chao, trait);
+    expect(awakened.traits[0]!.effect.apply).toEqual([{ op: 'autoWinLeg' }]);
   });
 });
 

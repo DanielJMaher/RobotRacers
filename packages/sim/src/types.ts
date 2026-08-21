@@ -56,17 +56,17 @@ export type TriggerCondition =
   | { on: 'bout_start' }
   | { on: 'race_start' }
   // Added 2026-08-21 (roadmap.md Phase 5.9 — "hook Traits into races"):
-  // fires once at the very end of resolveRace, after the last Leg (or the
-  // DNF break) — the counterpart to race_start. `outcome` narrows to just
-  // finishes or just DNFs; omit it to fire on either. This is what backs
-  // "if you complete the Race, ..." style cards (e.g. green.ts's Still
-  // Waters) — deliberately a plain finished/DNF check rather than a
-  // one-off "...without using a Technique" condition some cards were
-  // originally flavored around, since that needs whole-race event history
-  // a single TriggerCondition predicate isn't set up to see. Cards wanting
-  // that nuance were reflavored instead of bending the trigger shape around
-  // one card (see the affected cards' doc comments).
-  | { on: 'race_end'; outcome?: 'finished' | 'dnf' }
+  // fires once at the very end of resolveRace, after the last Leg — the
+  // counterpart to race_start. This is what backs "if you complete the
+  // Race, ..." style cards (e.g. white.ts's Still Waters) — deliberately a
+  // plain "the Race is over" check rather than a one-off "...without using
+  // a Technique" condition some cards were originally flavored around,
+  // since that needs whole-race event history a single TriggerCondition
+  // predicate isn't set up to see. Originally carried an `outcome:
+  // 'finished' | 'dnf'` field to distinguish the two ways a Race could end;
+  // removed the same day DNF itself was removed (below) — every Race now
+  // always finishes, so there was nothing left to distinguish.
+  | { on: 'race_end' }
   | { on: 'manual' }; // player-triggered by loading before the event, GDD §6.3
 
 export type EffectOp =
@@ -82,7 +82,6 @@ export type EffectOp =
   | { op: 'forceEvade' }
   | { op: 'forceHit' }
   | { op: 'autoWinLeg' }
-  | { op: 'autoResolveDNF'; result: 'safe' }
   // Added 2026-08-20 (GDD §3.5): a special-traversal/shortcut mechanic for
   // creature-flavored cards (e.g. "Elephant walks the riverbed instead of
   // swimming") — deliberately separate from the existing Fly/Swim fork
@@ -409,6 +408,9 @@ export interface GameState {
 // directly (cards author triggers and ops, not log events), and no
 // resolver produces them anymore now that bout.ts is deleted, so there's
 // nothing "dormant" to preserve — they were purely Bout's own output shape.
+// `dnf` was removed 2026-08-21, per the user's direct request ("remove the
+// entire DNF crap - we are not looking for DNFs") — resolveRace no longer
+// ever cuts a Race short, so there's no DNF outcome left to log at all.
 export type SimEvent =
   | { type: 'grade_roll'; cardId: string; stat: Stat; roll: number }
   // `stat`/`difficulty` added for the race-timing follow-up (roadmap.md) —
@@ -416,7 +418,6 @@ export type SimEvent =
   // shortcut check if taken, the leg's own otherwise), so a display-only
   // timing computation doesn't need to re-derive fork logic.
   | { type: 'leg_result'; chaoId: string; legType: string; success: boolean; stat: Stat; difficulty: number }
-  | { type: 'dnf'; chaoId: string }
   | { type: 'technique_fired'; cardId: string; chaoId: string }
   | { type: 'trait_fired'; cardId: string; chaoId: string }
   // Added during Phase 1 (see roadmap.md): Bond Card keywords fire during

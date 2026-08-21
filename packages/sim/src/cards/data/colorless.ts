@@ -164,12 +164,13 @@ export const secondChanceEgg: ItemCard = {
   flavorText: "It hasn't hatched yet. Somehow that's exactly the point.",
   // Was "treat a failed happiness threshold as passed at cocoon time" — the
   // whole cocoon/reincarnation state machine (Phase 2's run structure) was
-  // cut before this ever had anything to hook into. Reframed as its most
-  // direct legendary-tier translation onto the mechanic that DOES exist:
-  // survive a Race you would otherwise DNF, once.
+  // cut before this ever had anything to hook into. Originally reframed
+  // around autoResolveDNF ("survive a Race you'd otherwise DNF"); DNF
+  // itself was removed 2026-08-21, so this is now a legendary-tier
+  // last-resort recovery instead — the biggest of the stamina_below Items.
   effect: {
-    trigger: { on: 'race_start' },
-    apply: [{ op: 'autoResolveDNF', result: 'safe' }],
+    trigger: { on: 'stamina_below', fraction: 0.1 },
+    apply: [{ op: 'restoreStamina', amount: 20 }],
     onceLimit: 'per_race',
   },
 };
