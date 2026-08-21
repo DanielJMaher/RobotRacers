@@ -46,6 +46,7 @@ import { narrateDraftPick, narrateSimEvent } from './narration';
 export interface RaceResultEntry {
   chaoId: string;
   name: string;
+  isPlayer: boolean;
   eliminated: boolean;
   // A DNF's totalSeconds only covers the legs it actually attempted before
   // running out of Stamina — never comparable to a finisher's total time
@@ -67,12 +68,14 @@ function buildRaceResultEntries(
   results: Record<string, RaceResult>,
   nameById: Record<string, string>,
   eliminatedChaoId: string | undefined,
+  playerChaoId: string,
 ): RaceResultEntry[] {
   return ranking.map((chaoId) => {
     const result = results[chaoId]!;
     return {
       chaoId,
       name: nameById[chaoId] ?? chaoId,
+      isPlayer: chaoId === playerChaoId,
       eliminated: chaoId === eliminatedChaoId,
       dnf: !result.finished,
       timing: computeRaceTiming(result.finalChao, result.events),
@@ -350,7 +353,13 @@ export function useGame() {
     // Fruit trigger fires after every race, GDD §6.9.
     const envAfterRace = triggerFruitGain(environment);
     setRaceResult({
-      entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, outcome.eliminatedChaoId),
+      entries: buildRaceResultEntries(
+        outcome.ranking,
+        outcome.results,
+        nameById,
+        outcome.eliminatedChaoId,
+        tournament.playerChaoId,
+      ),
       isFinalRace: false,
     });
 
@@ -418,7 +427,7 @@ export function useGame() {
     setTournament(outcome.state);
     setEnvironment(triggerFruitGain(environment));
     setRaceResult({
-      entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, undefined),
+      entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, undefined, tournament.playerChaoId),
       isFinalRace: true,
     });
     // Reaching the Final Race always means placing 1st/2nd/3rd of 3, so the
