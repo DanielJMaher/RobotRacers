@@ -48,7 +48,6 @@ export function App() {
             <HabitatPlacementScreen
               environment={game.environment}
               onChoose={game.chooseHabitat}
-              onPlace={game.placeHabitatCard}
               onContinue={game.continueToTournament}
             />
           )}

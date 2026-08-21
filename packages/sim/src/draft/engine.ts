@@ -2,7 +2,7 @@ import type { Rng } from '../rng';
 import type { Card, DraftSeat, DraftState } from '../types';
 import { chooseBotCardIndex, initialColorAffinity, nudgeAffinity } from './bots';
 import type { CardPool, PackConfig } from './pool';
-import { DEFAULT_PACK_CONFIG, drawBonusHabitat, generateSpellPack } from './pool';
+import { DEFAULT_PACK_CONFIG, generateSpellPack } from './pool';
 
 // A single drafted pick, for UI history/replay — deliberately separate from
 // the combat-focused SimEvent union in types.ts (a card pick isn't a Race or
@@ -54,10 +54,16 @@ export function createDraft(params: CreateDraftParams, cardPool: CardPool, rng: 
   return startRound(state, cardPool, rng, config);
 }
 
-// Opens a fresh pack for every seat and hands out that round's bonus Habitat
-// card directly into each seat's pool (not part of what circulates — see
-// pool.ts). Only callable between rounds (or at draft start), when no seat
-// currently has cards in front of them.
+// Opens a fresh pack for every seat. Only callable between rounds (or at
+// draft start), when no seat currently has cards in front of them.
+//
+// No longer hands out a random bonus Habitat card per round (removed
+// 2026-08-21, playtest-prep) — Habitat colors are now a free player choice
+// (tournament/environment.ts's setHabitatChoice), not something the draft
+// randomly assigns. drawBonusHabitat/placeHabitatCard/canPlaceHabitatCard
+// still exist and are still tested, but nothing calls them from the app
+// anymore; kept in case a future mechanic (e.g. a dedicated Interlude
+// option) reintroduces a real way to grow a Habitat to 2-star.
 export function startRound(
   state: DraftState,
   cardPool: CardPool,
@@ -72,12 +78,7 @@ export function startRound(
   }
 
   const packsInFront = state.seats.map(() => generateSpellPack(cardPool, rng, config));
-  const seats = state.seats.map((seat) => {
-    const bonus = drawBonusHabitat(cardPool, rng);
-    return bonus ? { ...seat, pool: [...seat.pool, bonus] } : seat;
-  });
-
-  return { ...state, seats, packsInFront };
+  return { ...state, packsInFront };
 }
 
 function neighborIndex(seatIndex: number, seatCount: number, direction: 'left' | 'right'): number {

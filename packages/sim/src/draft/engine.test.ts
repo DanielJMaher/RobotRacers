@@ -7,7 +7,7 @@ import { buildCardPool } from './pool';
 const cardPool = buildCardPool(coreGardenSet);
 
 describe('createDraft', () => {
-  it('opens a pack of the configured size in front of every seat, and hands out a bonus Habitat', () => {
+  it('opens a pack of the configured size in front of every seat, with no bonus cards pre-seeded', () => {
     const rng = createRng(1);
     const state = createDraft({ seed: 1, seatCount: 4, playerSeatIndex: 0 }, cardPool, rng);
 
@@ -16,9 +16,11 @@ describe('createDraft', () => {
     for (const pack of state.packsInFront) {
       expect(pack).toHaveLength(state.packSize);
     }
+    // No more random bonus Habitat card per round (removed 2026-08-21,
+    // playtest-prep) — Habitat colors are a free player choice now
+    // (tournament/environment.ts's setHabitatChoice), not draft-assigned.
     for (const seat of state.seats) {
-      expect(seat.pool.length).toBeGreaterThanOrEqual(0); // 1 if a Habitat was drawn, 0 if the pool ran dry
-      expect(seat.pool.every((c) => c.type === 'habitat')).toBe(true);
+      expect(seat.pool).toEqual([]);
     }
     expect(state.seats[0]!.isPlayer).toBe(true);
     expect(state.seats[1]!.isPlayer).toBe(false);
@@ -106,15 +108,14 @@ describe('full draft determinism', () => {
     const poolsB = runFullDraft(42);
     expect(poolsA).toEqual(poolsB);
 
-    // Sanity check on the shape of a completed draft: 3 packs of packSize
-    // spell cards each, plus up to 3 bonus Habitats (one per round, subject
-    // to the Habitat pool existing) for every seat.
+    // Sanity check on the shape of a completed draft: exactly 3 packs of
+    // packSize spell cards each, per seat — no bonus cards anymore (removed
+    // 2026-08-21, playtest-prep).
     const rng = createRng(42);
     const probeState = createDraft({ seed: 42, seatCount: 4, playerSeatIndex: 0 }, cardPool, rng);
     const expectedSpellCards = probeState.packSize * 3;
     for (const pool of poolsA) {
-      expect(pool.length).toBeGreaterThanOrEqual(expectedSpellCards);
-      expect(pool.length).toBeLessThanOrEqual(expectedSpellCards + 3);
+      expect(pool.length).toBe(expectedSpellCards);
     }
   });
 });

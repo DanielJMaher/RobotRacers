@@ -5,7 +5,6 @@ import type {
   Chao,
   DraftState,
   Environment,
-  HabitatCard,
   InterludeDraftState,
   NextTournamentSetup,
   PotionCard,
@@ -36,7 +35,6 @@ import {
   DEFAULT_SPLASH_TAX,
   FRUIT_COST_BY_RARITY,
   pickInterludeCard as pickInterludeCardOnState,
-  placeHabitatCard as placeHabitatCardOnEnvironment,
   plantSeed as plantSeedOnEnvironment,
   prepareNextTournament,
   runFinalRace,
@@ -228,17 +226,20 @@ export function useGame() {
         const freshChao =
           pendingPlayerChao ?? createChao({ id: 'chao-1', name: 'Your Chao', bornGeneration: 1 });
         const others = pendingOthers ?? undefined;
-        const drawnHabitats = playerSeat.pool.filter((c): c is HabitatCard => c.type === 'habitat');
+        // No more drawn Habitat cards to collect (removed 2026-08-21,
+        // playtest-prep) — createEnvironment always starts with 3 Open
+        // Forts now; the player freely chooses each slot's color on the
+        // next screen via chooseHabitat, see setHabitatChoice.
         const drawnSeeds = playerSeat.pool.filter((c): c is SeedCard => c.type === 'seed');
-        let env = createEnvironment(drawnHabitats);
+        let env = createEnvironment([]);
         for (const seed of drawnSeeds) env = addAvailableSeed(env, seed);
         // NOTE: the Tournament-start Fruit trigger (GDD §6.9) fires once the
-        // player finishes placing Habitats (continueToTournament below), not
-        // here — at this point every slot is still empty by construction
-        // (createEnvironment starts with 3 Open Forts), so triggering here
-        // would always compute against 3 Open Forts regardless of what the
-        // player actually places. A real bug caught via a live Playwright
-        // pass before this fix landed.
+        // player finishes choosing Habitats (continueToTournament below),
+        // not here — at this point every slot is still empty by
+        // construction, so triggering here would always compute against 3
+        // empty Open Forts regardless of what the player actually chooses.
+        // A real bug caught via a live Playwright pass before this fix
+        // landed.
 
         setDraft(afterTick);
         setTournament(createTournament(freshChao, rngRef.current, others));
@@ -248,8 +249,8 @@ export function useGame() {
         setPhase('habitat_placement');
         appendLog([
           ...pickLines,
-          `Draft complete! Your pool has ${playerSeat.pool.length} cards, including ${drawnHabitats.length} Habitat card(s).`,
-          'Place your Habitat cards into your 3 Environment slots before the Tournament begins.',
+          `Draft complete! Your pool has ${playerSeat.pool.length} cards.`,
+          'Choose your 3 Habitat colors before the Tournament begins.',
         ]);
         return;
       }
@@ -264,16 +265,6 @@ export function useGame() {
       appendLog(pickLines);
     },
     [draft, pendingPlayerChao, pendingOthers, appendLog],
-  );
-
-  const placeHabitatCard = useCallback(
-    (cardIndex: number, slotIndex: number) => {
-      if (!environment) return;
-      const card = environment.unplacedHabitats[cardIndex];
-      setEnvironment(placeHabitatCardOnEnvironment(environment, cardIndex, slotIndex));
-      if (card) appendLog([`${card.name} placed into Environment Slot ${slotIndex + 1}.`]);
-    },
-    [environment, appendLog],
   );
 
   // Free habitat choice (playtest-prep, added 2026-08-21, per the user's
@@ -631,7 +622,6 @@ export function useGame() {
     selectedTechniqueIds,
     log,
     pickCard,
-    placeHabitatCard,
     chooseHabitat,
     continueToTournament,
     bondBondCard,
