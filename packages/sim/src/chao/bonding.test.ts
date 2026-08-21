@@ -3,7 +3,17 @@ import { brambleHare, hollowLogDen } from '../cards/data/green';
 import { deeprootFruit } from '../cards/data/potions';
 import { jackrabbitReflex, skitterFinch } from '../cards/data/red';
 import { createRng } from '../rng';
-import { awakenBondCard, bondCard, computeSplashTax, consumePotion } from './bonding';
+import type { ItemCard, TraitCard } from '../types';
+import {
+  awakenBondCard,
+  bondCard,
+  bondTrait,
+  computeSplashTax,
+  consumePotion,
+  equipItem,
+  unbondTrait,
+  unequipItem,
+} from './bonding';
 import { createChao } from './factory';
 
 describe('createChao', () => {
@@ -158,5 +168,87 @@ describe('computeSplashTax', () => {
     const rng = createRng(5);
     const { chao: bonded } = bondCard(chao, brambleHare, rng);
     expect(computeSplashTax(bonded, { color: 'colorless' }, 3)).toBe(0);
+  });
+});
+
+const testTrait: TraitCard = {
+  id: 'trait.test_bonding',
+  name: 'Test Trait',
+  rarity: 'common',
+  type: 'trait',
+  color: 'green',
+  effect: { trigger: { on: 'race_start' }, apply: [{ op: 'modifyStat', stat: 'power', amount: 1 }] },
+};
+
+describe('bondTrait / unbondTrait', () => {
+  it('appends the Trait to chao.traits and pulls color identity toward it', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: bonded, events } = bondTrait(chao, testTrait);
+    expect(bonded.traits).toEqual([testTrait]);
+    expect(bonded.colorIdentity).toEqual(['green']);
+    expect(events).toEqual([]);
+  });
+
+  it('removes the matching Trait by id, leaving others and derived fields recomputed', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: bonded } = bondTrait(chao, testTrait);
+    const unbonded = unbondTrait(bonded, testTrait.id);
+    expect(unbonded.traits).toEqual([]);
+    expect(unbonded.colorIdentity).toEqual([]);
+  });
+
+  it('is a no-op when the given id is not currently bonded', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    expect(unbondTrait(chao, 'trait.nope')).toEqual(chao);
+  });
+});
+
+const staticItem: ItemCard = {
+  id: 'item.test_static',
+  name: 'Test Static Item',
+  rarity: 'common',
+  type: 'item',
+  color: 'colorless',
+  effect: { stat: 'luck', amount: 2 },
+};
+
+const triggeredItem: ItemCard = {
+  id: 'item.test_triggered',
+  name: 'Test Triggered Item',
+  rarity: 'common',
+  type: 'item',
+  color: 'colorless',
+  effect: { trigger: { on: 'race_start' }, apply: [{ op: 'grantFruit', amount: 1 }] },
+};
+
+describe('equipItem / unequipItem', () => {
+  it('applies a StaticModifier stat bonus immediately, once, at equip time', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: equipped } = equipItem(chao, staticItem);
+    expect(equipped.stats.luck).toBe(2);
+    expect(equipped.items).toEqual([staticItem]);
+  });
+
+  it('reverses the exact StaticModifier amount on unequip', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: equipped } = equipItem(chao, staticItem);
+    const unequipped = unequipItem(equipped, staticItem.id);
+    expect(unequipped.stats.luck).toBe(0);
+    expect(unequipped.items).toEqual([]);
+  });
+
+  it('leaves stats untouched for a TriggeredEffect item (nothing to apply until it fires)', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: equipped } = equipItem(chao, triggeredItem);
+    expect(equipped.stats).toEqual(chao.stats);
+    expect(equipped.items).toEqual([triggeredItem]);
+    const unequipped = unequipItem(equipped, triggeredItem.id);
+    expect(unequipped.stats).toEqual(chao.stats);
+    expect(unequipped.items).toEqual([]);
+  });
+
+  it('is a no-op when the given id is not currently equipped', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    expect(unequipItem(chao, 'item.nope')).toEqual(chao);
   });
 });

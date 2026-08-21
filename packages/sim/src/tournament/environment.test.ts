@@ -6,13 +6,18 @@ import { dustdashLizard } from '../cards/data/red';
 import { cinderSeed, emberSeed } from '../cards/data/seeds';
 import { createChao } from '../chao/factory';
 import { createRng } from '../rng';
+import type { ItemCard, TraitCard } from '../types';
 import {
   addAvailableSeed,
+  applyFruitEvents,
   awakenBondCardWithCost,
   bondCardWithSplashTax,
+  bondTraitWithCost,
   consumePotionWithCost,
   createEnvironment,
+  DEFAULT_SPLASH_TAX,
   type Environment,
+  equipItemWithCost,
   placeHabitatCard,
   plantSeed,
   setHabitatChoice,
@@ -353,5 +358,96 @@ describe('consumePotionWithCost', () => {
     expect(result.ok).toBe(false);
     expect(result.costPaid).toBe(0);
     expect(result.chao).toBe(chao);
+  });
+});
+
+const testTrait: TraitCard = {
+  id: 'trait.test_env_cost',
+  name: 'Test Trait',
+  rarity: 'common',
+  type: 'trait',
+  color: 'green',
+  effect: { trigger: { on: 'race_start' }, apply: [{ op: 'modifyStat', stat: 'power', amount: 1 }] },
+};
+
+describe('bondTraitWithCost', () => {
+  it('pays the base cost in the Trait\'s own color and bonds it', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const env = withFruit(createEnvironment([]), { green: 1 });
+    const result = bondTraitWithCost(chao, env, testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(true);
+    expect(result.costPaid).toBe(1);
+    expect(result.environment.fruit.green).toBe(0);
+    expect(result.chao.traits).toEqual([testTrait]);
+  });
+
+  it('blocks on insufficient Fruit without touching traits', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const result = bondTraitWithCost(chao, createEnvironment([]), testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('insufficient_fruit');
+    expect(result.chao.traits).toEqual([]);
+  });
+
+  it('blocks on a full Trait roster before ever charging Fruit', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const full = { ...chao, traits: [testTrait, { ...testTrait, id: 'trait.other' }] };
+    const env = withFruit(createEnvironment([]), { green: 10 });
+    const result = bondTraitWithCost(full, env, testTrait, DEFAULT_SPLASH_TAX);
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('slots_full');
+    expect(result.environment.fruit.green).toBe(10); // untouched — never charged
+  });
+});
+
+const testItem: ItemCard = {
+  id: 'item.test_env_cost',
+  name: 'Test Item',
+  rarity: 'uncommon',
+  type: 'item',
+  color: 'colorless',
+  effect: { stat: 'luck', amount: 2 },
+};
+
+describe('equipItemWithCost', () => {
+  it('pays the base cost from colorless Fruit and equips it', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const env = withFruit(createEnvironment([]), { colorless: 2 });
+    const result = equipItemWithCost(chao, env, testItem);
+
+    expect(result.ok).toBe(true);
+    expect(result.costPaid).toBe(2);
+    expect(result.environment.fruit.colorless).toBe(0);
+    expect(result.chao.stats.luck).toBe(2);
+    expect(result.chao.items).toEqual([testItem]);
+  });
+
+  it('blocks on insufficient colorless Fruit', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const result = equipItemWithCost(chao, createEnvironment([]), testItem);
+
+    expect(result.ok).toBe(false);
+    expect(result.chao.items).toEqual([]);
+  });
+});
+
+describe('applyFruitEvents', () => {
+  it('credits every fruit_gained event to colorless Fruit', () => {
+    const env = createEnvironment([]);
+    const next = applyFruitEvents(env, [
+      { type: 'fruit_gained', amount: 3, reason: 'trait.x' },
+      { type: 'leg_result', chaoId: 'c1', legType: 'sprint', success: true, stat: 'run', difficulty: 10 },
+      { type: 'fruit_gained', amount: 2, reason: 'item.y' },
+    ]);
+    expect(next.fruit.colorless).toBe(5);
+  });
+
+  it('leaves Fruit untouched when there are no fruit_gained events', () => {
+    const env = withFruit(createEnvironment([]), { green: 4 });
+    const next = applyFruitEvents(env, [{ type: 'dnf', chaoId: 'c1' }]);
+    expect(next.fruit).toEqual(env.fruit);
   });
 });

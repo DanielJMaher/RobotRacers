@@ -30,6 +30,7 @@ export const deeprootFruit: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'green',
+  flavorText: 'Tastes like patience. Somehow that helps.',
   statGrants: [{ stat: 'stamina', min: 10, max: 14 }],
 };
 
@@ -39,6 +40,7 @@ export const sunlitBerries: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'green',
+  flavorText: 'Warm all the way through, like they remember the sun.',
   statGrants: [
     { stat: 'stamina', min: 4, max: 6 },
     { stat: 'mind', min: 1, max: 1 },
@@ -51,6 +53,7 @@ export const heartroot: PotionCard = {
   rarity: 'rare',
   type: 'potion',
   color: 'green',
+  flavorText: 'Grows in the dark, for exactly this kind of moment.',
   statGrants: [{ stat: 'stamina', min: 20, max: 28 }],
 };
 
@@ -60,6 +63,7 @@ export const quickstepDraught: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'red',
+  flavorText: 'Goes down fast. So does everything after it.',
   statGrants: [{ stat: 'run', min: 10, max: 14 }],
 };
 
@@ -69,6 +73,7 @@ export const racingStripeTonic: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'red',
+  flavorText: 'Paints a stripe down the back that was never really there.',
   statGrants: [
     { stat: 'run', min: 5, max: 8 },
     { stat: 'luck', min: 1, max: 1 },
@@ -81,6 +86,7 @@ export const boundingDraught: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'red',
+  flavorText: 'One sip, and the ground stops feeling necessary.',
   statGrants: [{ stat: 'jump', min: 8, max: 12 }],
 };
 
@@ -90,6 +96,7 @@ export const crushblowTonic: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'black',
+  flavorText: 'Smells like iron. Works like it too.',
   statGrants: [{ stat: 'power', min: 10, max: 14 }],
 };
 
@@ -99,6 +106,7 @@ export const grindingStone: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'black',
+  flavorText: 'Sharpens what it touches. Wears down what it does not need.',
   // The set's one deliberate downside common (card-set-list.md) — a genuine
   // tradeoff so late Black picks aren't strictly good, per that doc's
   // set-design notes. rollInRange handles a negative min===max fine.
@@ -114,6 +122,7 @@ export const quarryGripTonic: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'black',
+  flavorText: 'Leaves the hands rough and the grip unshakeable.',
   statGrants: [{ stat: 'climb', min: 8, max: 12 }],
 };
 
@@ -123,6 +132,7 @@ export const windcatcherDraught: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'blue',
+  flavorText: 'Bottled wind. It never quite settles once it is opened.',
   statGrants: [{ stat: 'fly', min: 10, max: 14 }],
 };
 
@@ -132,6 +142,7 @@ export const cloudsightTonic: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'blue',
+  flavorText: 'The higher it looks, the clearer everything gets.',
   // card-set-list.md's flavor text also grants "draw an extra card at your
   // next Draft Booster" — PotionCard's schema is deliberately stat-grants-
   // only (GDD §4.2: "no slot, no speciesTags, no bodyMutation... always
@@ -147,6 +158,7 @@ export const clearwaterDraught: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'white',
+  flavorText: 'So clear it is easy to forget it is there at all — until it works.',
   statGrants: [{ stat: 'swim', min: 10, max: 14 }],
 };
 
@@ -156,6 +168,7 @@ export const tidepoolTonic: PotionCard = {
   rarity: 'common',
   type: 'potion',
   color: 'white',
+  flavorText: 'Collected at low tide, from the calmest pool on the shore.',
   // card-set-list.md's flavor text also grants "+2 Happiness" — Happiness
   // isn't a Stat (it's a separate Chao field, chao.happiness, fed by Rest
   // Garden nodes and DNF tracking per the GDD), so it can't be expressed via
@@ -172,6 +185,7 @@ export const bramblefireTonic: PotionCard = {
   type: 'potion',
   color: 'green',
   secondaryColors: ['red'],
+  flavorText: 'Slow-burning at first, then all at once.',
   statGrants: [
     { stat: 'stamina', min: 6, max: 9 },
     { stat: 'run', min: 6, max: 9 },
@@ -185,6 +199,7 @@ export const ashbloodDraught: PotionCard = {
   type: 'potion',
   color: 'red',
   secondaryColors: ['black'],
+  flavorText: 'Bitter going down. Nobody drinks it for the taste.',
   statGrants: [
     { stat: 'run', min: 6, max: 9 },
     { stat: 'power', min: 6, max: 9 },
@@ -198,6 +213,7 @@ export const stormforgedElixir: PotionCard = {
   type: 'potion',
   color: 'black',
   secondaryColors: ['blue'],
+  flavorText: 'Brewed in the eye of something that was still angry when it was bottled.',
   statGrants: [
     { stat: 'power', min: 6, max: 9 },
     { stat: 'fly', min: 6, max: 9 },
@@ -211,6 +227,7 @@ export const tidewindPotion: PotionCard = {
   type: 'potion',
   color: 'blue',
   secondaryColors: ['white'],
+  flavorText: 'Where the wind meets the water, and neither one wins.',
   statGrants: [
     { stat: 'fly', min: 6, max: 9 },
     { stat: 'swim', min: 6, max: 9 },
@@ -224,6 +241,7 @@ export const springwaterTonic: PotionCard = {
   type: 'potion',
   color: 'white',
   secondaryColors: ['green'],
+  flavorText: 'Cold, clean, and older than the garden it flows through.',
   statGrants: [
     { stat: 'swim', min: 6, max: 9 },
     { stat: 'stamina', min: 6, max: 9 },
@@ -239,6 +257,7 @@ export const primalSurgePotion: PotionCard = {
   type: 'potion',
   color: 'green',
   secondaryColors: ['red', 'black'],
+  flavorText: "Everything the earth ever built into one Chao, poured out at once.",
   statGrants: [
     { stat: 'stamina', min: 8, max: 12 },
     { stat: 'run', min: 8, max: 12 },
@@ -253,6 +272,7 @@ export const deepCurrentElixir: PotionCard = {
   type: 'potion',
   color: 'black',
   secondaryColors: ['blue', 'white'],
+  flavorText: 'Pulled from a current with no visible bottom.',
   statGrants: [
     { stat: 'power', min: 8, max: 12 },
     { stat: 'fly', min: 8, max: 12 },
@@ -267,6 +287,7 @@ export const verdantRushTonic: PotionCard = {
   type: 'potion',
   color: 'white',
   secondaryColors: ['green', 'red'],
+  flavorText: 'The whole course feels shorter after drinking it.',
   statGrants: [
     { stat: 'swim', min: 8, max: 12 },
     { stat: 'stamina', min: 8, max: 12 },
@@ -283,6 +304,7 @@ export const wyldstormElixir: PotionCard = {
   type: 'potion',
   color: 'green',
   secondaryColors: ['black', 'blue'],
+  flavorText: 'Three storms, bottled together, that never learned to stop fighting each other.',
   statGrants: [
     { stat: 'stamina', min: 14, max: 18 },
     { stat: 'power', min: 14, max: 18 },
@@ -297,6 +319,7 @@ export const bloodtidePotion: PotionCard = {
   type: 'potion',
   color: 'red',
   secondaryColors: ['white', 'black'],
+  flavorText: 'The tide turns red once, and the Chao that drinks it turns with it.',
   statGrants: [
     { stat: 'run', min: 14, max: 18 },
     { stat: 'swim', min: 14, max: 18 },

@@ -3,15 +3,17 @@ import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 // "Core Garden" example set — Black (Power) cards.
 // Source: docs/01-design/card-set-list.md
 //
-// Same convention as green.ts/red.ts: `custom` EffectOps mark keyword text
-// that doesn't map to an existing typed op yet — the Race resolver fires and
-// logs these, with no mechanical effect, until a future pass gives them
-// real semantics.
-//
 // Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
 // model: `slot` -> per-grant `region` (hands->arms here), `bodyMutation:
 // string` -> `bodyMutations: {region: string}`. Mechanical schema migration
 // only — see green.ts's header note for the full rationale.
+//
+// Rewritten 2026-08-21 (roadmap.md Phase 5.9) — same pass as green.ts/red.ts:
+// every keyword/effect below uses only currently-live triggers/ops, and
+// every card got a flavorText line. See green.ts's header note for the full
+// context. Bloodrock Idol's stamina_below Trait, previously declared live
+// but never actually checked anywhere, is now genuinely live too — see
+// events/race.ts's per-Leg stamina_below checkpoint, added this same pass.
 //
 // Potion cards (Crushblow Tonic, Grinding Stone, Quarry Grip Tonic) moved
 // out to cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) — see that
@@ -23,6 +25,7 @@ export const snappingTurtle: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
+  flavorText: 'Its jaw closes on obstacles the way most Chao close on doubt.',
   statGrants: [{ stat: 'power', min: 7, max: 11, region: 'arms' }],
   speciesTags: ['reptile'],
   bodyMutations: { arms: 'heavy_jaw' },
@@ -34,6 +37,7 @@ export const ironHideBoar: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
+  flavorText: "Doesn't go around anything. Never has.",
   statGrants: [{ stat: 'power', min: 8, max: 12, region: 'arms' }],
   speciesTags: ['beast'],
   bodyMutations: { arms: 'iron_hide' },
@@ -52,6 +56,7 @@ export const stagBeetlePincer: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
+  flavorText: 'Locks onto a problem and simply outlasts it.',
   statGrants: [
     { stat: 'power', min: 6, max: 10, region: 'arms' },
     { stat: 'stamina', min: 2, max: 4, region: 'arms' },
@@ -66,14 +71,16 @@ export const heavyStrike: TechniqueCard = {
   rarity: 'uncommon',
   type: 'technique',
   color: 'black',
+  flavorText: 'One good hit is worth a dozen careful ones.',
   energyCost: 1,
   exileOnUse: false,
+  // Was "next hit ignores the defender's Swim entirely" — a Bout-only
+  // damage mechanic with nothing left to hook into. Reflavored to a real,
+  // live burst loaded before the Race, same 'manual' convention as green.ts's
+  // Second Wind/Old Growth.
   effect: {
-    trigger: { on: 'round_start' },
-    apply: [
-      { op: 'custom', description: "This Chao's next hit ignores the defender's Swim entirely." },
-    ],
-    onceLimit: 'per_round',
+    trigger: { on: 'manual' },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 5 }],
   },
 };
 
@@ -83,12 +90,16 @@ export const warthogTusks: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
+  flavorText: 'Every charge leaves the ground a little more broken than it found it.',
   statGrants: [{ stat: 'power', min: 13, max: 18, region: 'arms' }],
   speciesTags: ['beast'],
   bodyMutations: { arms: 'tusks' },
   keyword: {
-    trigger: { on: 'on_hit', as: 'attacker' },
-    apply: [{ op: 'custom', description: "Knockback+: on hit, delays the defender's next action." }],
+    // Was "Knockback+: on hit, delays the defender's next action" — a Bout-
+    // only concept with no Race meaning. Reflavored to Feral Momentum's
+    // pattern (red.ts) but Power-flavored: every cleared Leg hits harder.
+    trigger: { on: 'leg_won' },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 2 }],
   },
 };
 
@@ -98,6 +109,7 @@ export const bloodrockIdol: TraitCard = {
   rarity: 'uncommon',
   type: 'trait',
   color: 'black',
+  flavorText: 'Carved from something that remembers being struck, and hitting back.',
   effect: {
     // Direct match: stamina_below is an existing trigger, modifyStat an
     // existing op — a real mechanically-live case, not a custom placeholder.
@@ -113,12 +125,17 @@ export const ramsCharge: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
+  flavorText: 'Lowers its head once. That is usually enough.',
   statGrants: [{ stat: 'power', min: 10, max: 14, region: 'head' }],
   speciesTags: ['beast'],
   bodyMutations: { head: 'curled_horns' },
   keyword: {
-    trigger: { on: 'bout_start' },
-    apply: [{ op: 'custom', description: 'Charge: deals bonus damage on the opening action of a Bout.' }],
+    // Was "Charge: bonus damage on the opening action of a Bout" — dead
+    // since Bout was removed. Reflavored to hit hardest right out of the
+    // gate, same "first Leg" convention as red.ts's Adrenaline Rush.
+    trigger: { on: 'leg_start' },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 5 }],
+    onceLimit: 'per_race',
   },
 };
 
@@ -128,14 +145,17 @@ export const obsidianClaw: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'black',
+  flavorText: 'Cuts deep enough to find reserves it did not know it had.',
   statGrants: [{ stat: 'power', min: 17, max: 23, region: 'arms' }],
   speciesTags: ['beast'],
   bodyMutations: { arms: 'obsidian_claws' },
   keyword: {
-    trigger: { on: 'on_hit', as: 'attacker' },
-    apply: [
-      { op: 'custom', description: 'Rend: ignores half of Unshakeable/shield-type Trait protections.' },
-    ],
+    // Was "Rend: ignores half of shield-type Trait protections" — dead
+    // (no shield/protection concept exists in the Race resolver at all).
+    // Reflavored to match its own flavor line above: digging in finds
+    // hidden Stamina reserves on every cleared Leg.
+    trigger: { on: 'leg_won' },
+    apply: [{ op: 'restoreStamina', amount: 3 }],
   },
 };
 
@@ -145,17 +165,18 @@ export const sacrificialOffering: TechniqueCard = {
   rarity: 'rare',
   type: 'technique',
   color: 'black',
+  flavorText: 'Gives everything, right at the start, and holds nothing back for later.',
   energyCost: 2,
   exileOnUse: false,
+  // Was "Sacrifice 10 Stamina: deal Power-equal bonus damage this round,
+  // ignoring Evasion" — a Bout-only damage mechanic. There's no live way to
+  // spend Stamina as a cost (restoreStamina only ever heals, and nothing
+  // else touches currentStamina downward outside a Leg's own cost), so
+  // rather than fake a "cost" this reflavors to a straightforward, honest
+  // burst — no sacrifice, just an all-in opening surge.
   effect: {
     trigger: { on: 'manual' },
-    apply: [
-      {
-        op: 'custom',
-        description:
-          'Sacrifice 10 Stamina: deal Power-equal bonus damage this round, ignoring Evasion.',
-      },
-    ],
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 6 }],
   },
 };
 
@@ -165,14 +186,14 @@ export const bonebreakerInstinct: TraitCard = {
   rarity: 'rare',
   type: 'trait',
   color: 'black',
+  flavorText: 'Gets meaner exactly when the course does.',
   effect: {
-    trigger: { on: 'on_hit', as: 'attacker' },
-    apply: [
-      {
-        op: 'custom',
-        description: "This Chao's knockback also reduces the defender's Run for the rest of the round.",
-      },
-    ],
+    // Was "knockback reduces the defender's Run for the rest of the round"
+    // — dead (Bout-only). Reflavored to a real late-Race power spike, one
+    // tier stronger than Bloodrock Idol's own stamina_below Trait above.
+    trigger: { on: 'stamina_below', fraction: 0.3 },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 5 }],
+    onceLimit: 'per_race',
   },
 };
 
@@ -182,18 +203,16 @@ export const warlordsFang: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'black',
+  flavorText: "Doesn't just finish a course. Conquers it.",
   statGrants: [{ stat: 'power', min: 26, max: 34, region: 'arms' }],
   speciesTags: ['beast'],
   bodyMutations: { arms: 'dark_fang_plating' },
   keyword: {
-    trigger: { on: 'on_hit', as: 'attacker' },
-    apply: [
-      {
-        op: 'custom',
-        description:
-          'Executioner: instantly wins the Bout if this hit would bring the defender below 10% Stamina.',
-      },
-    ],
+    // Was "Executioner: instantly wins the Bout below 10% Stamina" — dead
+    // since Bout was removed. Reflavored to a legendary permanent Power
+    // surge, granted fresh every Race.
+    trigger: { on: 'race_start' },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 6 }],
   },
 };
 
@@ -203,13 +222,15 @@ export const totalEclipse: TechniqueCard = {
   rarity: 'legendary',
   type: 'technique',
   color: 'black',
+  flavorText: 'For one course, nothing else about this Chao matters but how hard it hits.',
   energyCost: 3,
   exileOnUse: true,
+  // Was "ignores Evasion and Swim this round" — Bout-only. Reflavored to
+  // its legendary tier's most direct translation: an overwhelming, one-time
+  // Power surge loaded before the Race.
   effect: {
-    trigger: { on: 'round_start' },
-    apply: [
-      { op: 'custom', description: "This Bout: all of this Chao's actions this round ignore Evasion and Swim both." },
-    ],
+    trigger: { on: 'manual' },
+    apply: [{ op: 'modifyStat', stat: 'power', amount: 10 }],
   },
 };
 
@@ -224,6 +245,7 @@ export const boulderRam: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'black',
+  flavorText: 'Treats a rock face like a door that has not opened yet.',
   statGrants: [
     { stat: 'power', min: 6, max: 9, region: 'arms' },
     { stat: 'climb', min: 4, max: 7, region: 'arms' },
@@ -238,6 +260,7 @@ export const sheerFaceCrawler: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'black',
+  flavorText: "Gravity is a suggestion it stopped taking seriously long ago.",
   statGrants: [{ stat: 'climb', min: 10, max: 15, region: 'arms' }],
   speciesTags: ['insect'],
   bodyMutations: { arms: 'gripping_claws' },

@@ -81,6 +81,10 @@ export function App() {
                 onBondCard={game.bondBondCard}
                 onAwakenBondCard={game.awakenBondCard}
                 onConsumePotion={game.consumePotionCard}
+                onBondTrait={game.bondTrait}
+                onUnbondTrait={game.unbondTrait}
+                onEquipItem={game.equipItem}
+                onUnequipItem={game.unequipItem}
                 onToggleTechnique={game.toggleTechnique}
               />
               <EnvironmentPanel environment={game.environment} onPlantSeed={game.plantSeed} />

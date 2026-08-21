@@ -8,8 +8,18 @@ import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 // unchanged), `bodyMutation: string` -> `bodyMutations: {region: string}`.
 // This is a mechanical schema migration, not a content redesign — these
 // cards still grant only positive stats from a single region each. Giving
-// them the full multi-region mixed-sign "Penguin" treatment is a tracked
-// content follow-up (roadmap.md), not done here.
+// them the full multi-region mixed-sign "Penguin" treatment, and re-tuning
+// stat numbers against GDD §3.2's tiered color matrix, stays tracked as
+// separate future content work (roadmap.md Phase 6, alongside the
+// 21→50-creature expansion) — not attempted in this pass.
+//
+// Rewritten 2026-08-21 (roadmap.md Phase 5.9), per the user's direct
+// request ("recreate all the cards... a little more flair... traits need
+// hooked into races"): every keyword/effect below now uses only currently-
+// live triggers/ops (events/race.ts), and every card got a flavorText line.
+// Previously-dead Bout-only keywords (bout_start, on_hit, custom-with-no-
+// resolver) were reflavored to real Race-time mechanics rather than left
+// dormant — see each card's own inline note for what changed and why.
 //
 // Potion cards (Deeproot Fruit, Sunlit Berries, Heartroot) moved out to
 // cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) — see that file's
@@ -21,6 +31,7 @@ export const packleafTortoise: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
+  flavorText: 'Slow enough to count every leaf on the way past. Never in a hurry to lose.',
   statGrants: [{ stat: 'stamina', min: 8, max: 12, region: 'legs' }],
   speciesTags: ['reptile'],
   bodyMutations: { legs: 'shell' },
@@ -32,6 +43,7 @@ export const brambleHare: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
+  flavorText: 'Darts through thorn and root without slowing down for either.',
   statGrants: [
     { stat: 'stamina', min: 6, max: 10, region: 'legs' },
     { stat: 'run', min: 2, max: 4, region: 'legs' },
@@ -46,6 +58,7 @@ export const meadowFawn: BondCard = {
   rarity: 'common',
   type: 'bond',
   color: 'green',
+  flavorText: "Catches its breath between every stride, like the meadow itself is exhaling with it.",
   statGrants: [{ stat: 'stamina', min: 7, max: 11, region: 'back' }],
   speciesTags: ['beast'],
   bodyMutations: { back: 'fawn_spots' },
@@ -64,6 +77,7 @@ export const secondWind: TechniqueCard = {
   rarity: 'uncommon',
   type: 'technique',
   color: 'green',
+  flavorText: 'When the legs give out, the will carries the rest of the way.',
   energyCost: 1,
   exileOnUse: false,
   effect: {
@@ -79,17 +93,22 @@ export const oldGrowth: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'green',
+  flavorText: 'Its roots run deeper than the soil — deep reserves, waiting to be tapped.',
   statGrants: [{ stat: 'stamina', min: 14, max: 20, region: 'back' }],
   speciesTags: ['beast'],
   bodyMutations: { back: 'bark_patches' },
   keyword: {
+    // Was "Rooted: +50% effect from future Green Potions" — a `custom` op
+    // with no resolver hook (bonding-time scaling isn't something a Race
+    // trigger can reach). Reflavored to a real, permanent Stamina boost
+    // loaded before every Race, same 'manual' convention as Second Wind/
+    // Tortoiseshell Ward. NOTE: not restoreStamina — 'manual' fires right
+    // after resolveRace already resets currentStamina to full (see
+    // events/shared.ts's resetCurrentStamina), so a Stamina *restore* at
+    // this exact checkpoint would always be a no-op. modifyStat raises the
+    // base stat instead, which is never wasted.
     trigger: { on: 'manual' },
-    apply: [
-      {
-        op: 'custom',
-        description: 'Rooted: +50% effect from all future Green Potion cards used on this Chao.',
-      },
-    ],
+    apply: [{ op: 'modifyStat', stat: 'stamina', amount: 3 }],
   },
 };
 
@@ -99,6 +118,7 @@ export const tortoiseshellWard: TraitCard = {
   rarity: 'uncommon',
   type: 'trait',
   color: 'green',
+  flavorText: 'A shell thick enough that the Race itself cannot stop it.',
   effect: {
     trigger: { on: 'manual' },
     apply: [{ op: 'autoResolveDNF', result: 'safe' }],
@@ -112,6 +132,7 @@ export const hollowLogDen: BondCard = {
   rarity: 'uncommon',
   type: 'bond',
   color: 'green',
+  flavorText: 'A damp, mossy hideaway — equal parts den and diving board.',
   statGrants: [
     { stat: 'stamina', min: 12, max: 16, region: 'back' },
     { stat: 'swim', min: 4, max: 6, region: 'back' },
@@ -126,19 +147,18 @@ export const evergreenWarden: BondCard = {
   rarity: 'rare',
   type: 'bond',
   color: 'green',
+  flavorText: 'Ancient bark for skin. It has weathered worse than a bad Leg.',
   statGrants: [{ stat: 'stamina', min: 18, max: 24, region: 'legs' }],
   speciesTags: ['beast'],
   bodyMutations: { legs: 'root_boots' },
   keyword: {
-    trigger: { on: 'bout_start' },
-    apply: [
-      {
-        op: 'custom',
-        description:
-          'Unshakeable: immune to the first negative Technique played against this Chao each Bout.',
-      },
-    ],
-    onceLimit: 'per_bout',
+    // Was "Unshakeable: immune to the first negative Technique each Bout" —
+    // dead since Karate Bout was removed. Reflavored to a real Race-time
+    // safety net: when Stamina runs dangerously low, its roots anchor it
+    // and it recovers a real chunk — still "unshakeable" in spirit.
+    trigger: { on: 'stamina_below', fraction: 0.25 },
+    apply: [{ op: 'restoreStamina', amount: 10 }],
+    onceLimit: 'per_race',
   },
 };
 
@@ -148,15 +168,14 @@ export const ancientGroveBlessing: TraitCard = {
   rarity: 'rare',
   type: 'trait',
   color: 'green',
+  flavorText: 'Blessed by something older than the course it runs.',
   effect: {
-    trigger: { on: 'bout_start' },
-    apply: [
-      {
-        op: 'custom',
-        description:
-          "This Chao's Stamina stat is also used as a second defense check in Karate Bouts (averaged with Swim).",
-      },
-    ],
+    // Was "Stamina also used as a second defense check in Karate Bouts" —
+    // dead since Bout was removed. Reflavored to a real, permanent Race-
+    // start Stamina blessing — the grove's gift grows a little sturdier
+    // with every Race this Chao runs.
+    trigger: { on: 'race_start' },
+    apply: [{ op: 'modifyStat', stat: 'stamina', amount: 5 }],
   },
 };
 
@@ -166,17 +185,18 @@ export const thousandYearChaoOak: BondCard = {
   rarity: 'legendary',
   type: 'bond',
   color: 'green',
+  flavorText: 'It was already old when the first Tournament was run.',
   statGrants: [{ stat: 'stamina', min: 28, max: 36, region: 'back' }],
   speciesTags: ['beast', 'reptile'],
   bodyMutations: { back: 'bark_plating_canopy' },
   keyword: {
+    // Was "Evergreen: cannot be overwritten by future bonding" — moot now
+    // that bonding is cumulative and never overwrites anyone (GDD §3.5,
+    // corrected 2026-08-20 — true for every card, not just this one).
+    // Reflavored to match its legendary weight: a thousand years of growth,
+    // permanently added every time it steps onto a course.
     trigger: { on: 'manual' },
-    apply: [
-      {
-        op: 'custom',
-        description: 'Evergreen: this Bond Card cannot be overwritten by future bonding (permanent slot lock).',
-      },
-    ],
+    apply: [{ op: 'modifyStat', stat: 'stamina', amount: 8 }],
   },
 };
 
@@ -186,6 +206,7 @@ export const bountifulHarvest: TechniqueCard = {
   rarity: 'legendary',
   type: 'technique',
   color: 'green',
+  flavorText: 'Every cleared Leg leaves something ripe behind it.',
   energyCost: 2,
   exileOnUse: true,
   // card-set-list.md's flavor text says "for every Leg this Chao completes,

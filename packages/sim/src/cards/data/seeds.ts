@@ -15,6 +15,7 @@ export const verdantSeed: SeedCard = {
   rarity: 'common',
   type: 'seed',
   color: 'green',
+  flavorText: 'Plant it anywhere green, and it acts like it always belonged there.',
 };
 
 export const emberSeed: SeedCard = {
@@ -23,6 +24,7 @@ export const emberSeed: SeedCard = {
   rarity: 'common',
   type: 'seed',
   color: 'red',
+  flavorText: 'Warm to the touch even before it takes root.',
 };
 
 export const cinderSeed: SeedCard = {
@@ -31,6 +33,7 @@ export const cinderSeed: SeedCard = {
   rarity: 'common',
   type: 'seed',
   color: 'black',
+  flavorText: 'Looks burnt out. Grows anyway.',
 };
 
 export const stormSeed: SeedCard = {
@@ -39,6 +42,7 @@ export const stormSeed: SeedCard = {
   rarity: 'common',
   type: 'seed',
   color: 'blue',
+  flavorText: 'Never quite touches the ground it is planted in.',
 };
 
 export const tidalSeed: SeedCard = {
@@ -47,6 +51,7 @@ export const tidalSeed: SeedCard = {
   rarity: 'common',
   type: 'seed',
   color: 'white',
+  flavorText: 'Carried in on the tide, and never quite carried back out.',
 };
 
 export const seedCards = [verdantSeed, emberSeed, cinderSeed, stormSeed, tidalSeed];

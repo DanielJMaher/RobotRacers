@@ -4,6 +4,7 @@ import { meadowFawn } from '../cards/data/green';
 import { bondCard } from '../chao/bonding';
 import { createChao } from '../chao/factory';
 import { createRng } from '../rng';
+import type { TraitCard } from '../types';
 import type { LegType, RaceConfig } from './race';
 import { generateRaceCourse, resolveRace } from './race';
 
@@ -171,6 +172,108 @@ describe('resolveRace', () => {
       { type: 'leg_result', chaoId: 'c1', legType: 'climb', success: false, stat: 'climb', difficulty: 20 },
       { type: 'leg_result', chaoId: 'c1', legType: 'jump', success: false, stat: 'jump', difficulty: 20 },
     ]);
+  });
+});
+
+describe('resolveRace — Trait/Item engine hooks (added 2026-08-21)', () => {
+  it('fires a stamina_below Trait once currentStamina drops under the threshold', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_low_stamina',
+      name: 'Test Low Stamina Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'black',
+      effect: {
+        trigger: { on: 'stamina_below', fraction: 0.5 },
+        apply: [{ op: 'modifyStat', stat: 'power', amount: 7 }],
+      },
+    };
+    const chao = { ...base, stats: { ...base.stats, run: 50, power: 0, stamina: 20 }, traits: [trait] };
+    const config: RaceConfig = {
+      legs: [
+        { type: 'sprint', difficulty: 10, staminaCost: 6 }, // 20 -> 14 (70%, not yet below half)
+        { type: 'sprint', difficulty: 10, staminaCost: 6 }, // 14 -> 8 (40%, now below half)
+      ],
+    };
+
+    const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
+
+    expect(result.finalChao.stats.power).toBe(7);
+  });
+
+  it('enforces per_race onceLimit on a stamina_below Trait across multiple qualifying legs', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_low_stamina_once',
+      name: 'Test Low Stamina Once Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'black',
+      effect: {
+        trigger: { on: 'stamina_below', fraction: 0.9 },
+        apply: [{ op: 'modifyStat', stat: 'power', amount: 7 }],
+        onceLimit: 'per_race',
+      },
+    };
+    const chao = { ...base, stats: { ...base.stats, run: 50, power: 0, stamina: 30 }, traits: [trait] };
+    const config: RaceConfig = {
+      legs: [
+        { type: 'sprint', difficulty: 10, staminaCost: 5 },
+        { type: 'sprint', difficulty: 10, staminaCost: 5 },
+        { type: 'sprint', difficulty: 10, staminaCost: 5 },
+      ],
+    };
+
+    const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
+
+    expect(result.finalChao.stats.power).toBe(7); // fired exactly once, not once per qualifying leg
+  });
+
+  it('grantAlternateRoute swaps which stat a matching Leg checks', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_alt_route',
+      name: 'Test Alt Route Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'green',
+      effect: {
+        trigger: { on: 'leg_start', legType: 'water' },
+        apply: [{ op: 'grantAlternateRoute', legType: 'water', altStat: 'power', description: 'test' }],
+      },
+    };
+    // swim=0 would fail a Water leg outright; power=100 clears it easily via the alternate route.
+    const chao = { ...base, stats: { ...base.stats, swim: 0, power: 100, stamina: 50 }, traits: [trait] };
+    const config: RaceConfig = { legs: [{ type: 'water', difficulty: 20, staminaCost: 5 }] };
+
+    const result = resolveRace({ chao, loadedTechniques: [] }, config, createRng(1));
+
+    expect(result.legsCompleted).toBe(1);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: 'leg_result', legType: 'water', success: true, stat: 'power' }),
+    );
+  });
+
+  it('fires a race_end Trait scoped to "finished" only when the race actually finishes', () => {
+    const base = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const trait: TraitCard = {
+      id: 'trait.test_race_end',
+      name: 'Test Race End Trait',
+      rarity: 'common',
+      type: 'trait',
+      color: 'white',
+      effect: { trigger: { on: 'race_end', outcome: 'finished' }, apply: [{ op: 'grantFruit', amount: 4 }] },
+    };
+    const finishingChao = { ...base, stats: { ...base.stats, run: 50, stamina: 100 }, traits: [trait] };
+    const dnfChao = { ...base, stats: { ...base.stats, run: 50, stamina: 4 }, traits: [trait] };
+    const config: RaceConfig = { legs: [{ type: 'sprint', difficulty: 10, staminaCost: 5 }] };
+
+    const finished = resolveRace({ chao: finishingChao, loadedTechniques: [] }, config, createRng(1));
+    const dnf = resolveRace({ chao: dnfChao, loadedTechniques: [] }, config, createRng(1));
+
+    expect(finished.events).toContainEqual({ type: 'fruit_gained', amount: 4, reason: trait.id });
+    expect(dnf.events).not.toContainEqual({ type: 'fruit_gained', amount: 4, reason: trait.id });
   });
 });
 

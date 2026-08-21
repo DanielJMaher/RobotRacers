@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { rollInRange } from '../rng';
-import type { BondCard, BondedCard, Chao, PotionCard, RolledStatGrant, SimEvent } from '../types';
+import type { BondCard, BondedCard, Chao, ItemCard, PotionCard, RolledStatGrant, SimEvent, TraitCard } from '../types';
 import { recomputeDerived } from './derived';
 
 export interface BondResult {
@@ -109,6 +109,70 @@ export function consumePotion(
     stats[grant.stat] += grant.amount;
   }
   return { chao: { ...chao, stats }, events };
+}
+
+// Max simultaneously-equipped Trait Cards (GDD §3.5/§4.2) — unlike Bond
+// Cards, Traits don't stack unboundedly; the design is 2 active at a time,
+// freely swappable (unbondTrait below), not a one-time-use consumable.
+export const MAX_TRAITS = 2;
+
+// Bonds a Trait Card (added 2026-08-21 — until now `chao.traits` existed on
+// the type but nothing ever populated it, so no Trait effect could ever
+// fire). Unlike bondCard, a Trait carries no statGrants to roll — its only
+// effect is the TriggeredEffect that events/shared.ts's collectTriggerables
+// picks up once it's in this array. Still feeds color identity/alignment
+// (derived.ts already reads chao.traits for both), so recomputeDerived runs
+// here too. Caller (tournament/environment.ts's bondTraitWithCost) is
+// responsible for checking MAX_TRAITS before calling this — kept as a
+// precondition rather than a silent no-op/throw here, matching how
+// bondCard/consumePotion don't duplicate the pool-index bookkeeping the app
+// layer already owns.
+export function bondTrait(chao: Chao, card: TraitCard): { chao: Chao; events: SimEvent[] } {
+  return { chao: recomputeDerived({ ...chao, traits: [...chao.traits, card] }), events: [] };
+}
+
+// Unbonds one Trait by card id (the first match, if the same Trait is
+// somehow equipped twice) — frees a slot for a different Trait. No Fruit
+// refund: the cost was for the choice to run with that Trait for a while,
+// not a rental fee (same one-way-spend model as unequipItem below).
+export function unbondTrait(chao: Chao, cardId: string): Chao {
+  const index = chao.traits.findIndex((t) => t.id === cardId);
+  if (index === -1) return chao;
+  const traits = [...chao.traits.slice(0, index), ...chao.traits.slice(index + 1)];
+  return recomputeDerived({ ...chao, traits });
+}
+
+// Equips an Item Card (added 2026-08-21, alongside bondTrait — "items need
+// to have a purpose, currently they do nothing"). Items are uncapped and
+// freely re-equippable (Chao.items' own doc comment) rather than one-time-
+// use like Bond/Potion cards: a StaticModifier effect (a flat passive stat
+// bonus — see events/shared.ts's isStaticModifier) is folded into base
+// stats right here, once, at equip time; a TriggeredEffect effect is left
+// alone (it fires later, during a Race, via collectTriggerables reading
+// chao.items) — either way the ItemCard itself is appended to chao.items so
+// it's recognized as currently equipped.
+export function equipItem(chao: Chao, card: ItemCard): { chao: Chao; events: SimEvent[] } {
+  const stats =
+    'trigger' in card.effect
+      ? chao.stats
+      : { ...chao.stats, [card.effect.stat]: chao.stats[card.effect.stat] + card.effect.amount };
+  return { chao: { ...chao, stats, items: [...chao.items, card] }, events: [] };
+}
+
+// Unequips one Item by card id (first match) — reverses a StaticModifier's
+// stat bonus exactly (safe: it's the same fixed amount that was added at
+// equip time), leaving a TriggeredEffect item with nothing to reverse since
+// it never mutated stats directly.
+export function unequipItem(chao: Chao, cardId: string): Chao {
+  const index = chao.items.findIndex((i) => i.id === cardId);
+  if (index === -1) return chao;
+  const item = chao.items[index]!;
+  const stats =
+    'trigger' in item.effect
+      ? chao.stats
+      : { ...chao.stats, [item.effect.stat]: chao.stats[item.effect.stat] - item.effect.amount };
+  const items = [...chao.items.slice(0, index), ...chao.items.slice(index + 1)];
+  return { ...chao, stats, items };
 }
 
 // Splash tax (GDD §4.4): bonding a card whose color isn't already in the

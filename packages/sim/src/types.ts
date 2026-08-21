@@ -55,6 +55,18 @@ export type TriggerCondition =
   | { on: 'stamina_below'; fraction: number }
   | { on: 'bout_start' }
   | { on: 'race_start' }
+  // Added 2026-08-21 (roadmap.md Phase 5.9 — "hook Traits into races"):
+  // fires once at the very end of resolveRace, after the last Leg (or the
+  // DNF break) — the counterpart to race_start. `outcome` narrows to just
+  // finishes or just DNFs; omit it to fire on either. This is what backs
+  // "if you complete the Race, ..." style cards (e.g. green.ts's Still
+  // Waters) — deliberately a plain finished/DNF check rather than a
+  // one-off "...without using a Technique" condition some cards were
+  // originally flavored around, since that needs whole-race event history
+  // a single TriggerCondition predicate isn't set up to see. Cards wanting
+  // that nuance were reflavored instead of bending the trigger shape around
+  // one card (see the affected cards' doc comments).
+  | { on: 'race_end'; outcome?: 'finished' | 'dnf' }
   | { on: 'manual' }; // player-triggered by loading before the event, GDD §6.3
 
 export type EffectOp =
@@ -79,11 +91,16 @@ export type EffectOp =
   // the same inlined leg-type union as `leg_start`'s above rather than
   // importing LegType from events/race.ts, for the same reason noted there
   // (types.ts is foundational; race.ts depends on it, not the reverse).
-  // Field shape is a first-draft placeholder — not yet consumed by any
-  // resolver, same status as forceEvade/preventDamage/forceHit above.
+  // `altStat` added 2026-08-21 when this op was finally wired up in
+  // race.ts (it shipped as a type-only placeholder before that, per the
+  // note this replaces): the stat the Leg is actually checked against
+  // instead of its normal one (LEG_STAT in race.ts), at the same
+  // difficulty — e.g. an Elephant checks Power instead of Swim on a Water
+  // Leg because it walks the riverbed rather than swimming across.
   | {
       op: 'grantAlternateRoute';
       legType: 'sprint' | 'obstacle' | 'climb' | 'jump' | 'water' | 'air';
+      altStat: Stat;
       description: string;
     }
   // Phase 0 escape hatch: several keyword effects in the example card set
@@ -408,6 +425,11 @@ export type SimEvent =
   // in the original data-schemas.md pass — trait_fired doesn't fit since a
   // Bond keyword isn't a Trait Card.
   | { type: 'keyword_fired'; cardId: string; chaoId: string }
+  // Added 2026-08-21 alongside Item equipping (chao/bonding.ts) — an
+  // equipped Item's TriggeredEffect (as opposed to a passive
+  // StaticModifier, applied silently at equip time) firing during a Race,
+  // same idea as trait_fired/keyword_fired for their own card kinds.
+  | { type: 'item_fired'; cardId: string; chaoId: string }
   | { type: 'fruit_gained'; amount: number; reason: string };
 
 export interface ResolutionResult {

@@ -1,4 +1,5 @@
-import type { BodyRegion, BondCard, Card, Chao, PotionCard, Stat, TechniqueCard } from '@chao-draft/sim';
+import type { BodyRegion, BondCard, Card, Chao, ItemCard, PotionCard, Stat, TechniqueCard, TraitCard } from '@chao-draft/sim';
+import { MAX_TRAITS } from '@chao-draft/sim';
 import { CardBadge } from './CardBadge';
 
 interface GardenScreenProps {
@@ -11,7 +12,35 @@ interface GardenScreenProps {
   onBondCard: (card: BondCard, poolIndex: number) => void;
   onAwakenBondCard: (card: BondCard, poolIndices: [number, number, number]) => void;
   onConsumePotion: (card: PotionCard, poolIndex: number) => void;
+  onBondTrait: (card: TraitCard) => void;
+  onUnbondTrait: (card: TraitCard) => void;
+  onEquipItem: (card: ItemCard) => void;
+  onUnequipItem: (card: ItemCard) => void;
   onToggleTechnique: (id: string) => void;
+}
+
+// Traits/Items aren't consumed from the pool like Bond/Potion cards — the
+// same drafted copy can be equipped, unequipped, and re-equipped freely
+// (Chao.items' doc comment), so there's no usedPoolIndices-style bookkeeping
+// for them. But `chao.traits`/`chao.items` only holds card data, not which
+// specific pool copy each entry came from — if two identical-id copies were
+// drafted, there's no way to tell "which one" is equipped. This resolves
+// that the same stable way Awakening's grouping above does: sort a card
+// id's pool copies by poolIndex and treat the first N (N = how many of that
+// id are currently in chao.traits/.items) as "the equipped ones" — good
+// enough for a UI toggle, not meant to survive a save/load round-trip.
+function withEquippedFlag<T extends Card>(
+  entries: { card: T; poolIndex: number }[],
+  equippedCards: { id: string }[],
+): { card: T; poolIndex: number; equipped: boolean }[] {
+  const equippedCounts = new Map<string, number>();
+  for (const c of equippedCards) equippedCounts.set(c.id, (equippedCounts.get(c.id) ?? 0) + 1);
+  const seenSoFar = new Map<string, number>();
+  return entries.map(({ card, poolIndex }) => {
+    const seen = seenSoFar.get(card.id) ?? 0;
+    seenSoFar.set(card.id, seen + 1);
+    return { card, poolIndex, equipped: seen < (equippedCounts.get(card.id) ?? 0) };
+  });
 }
 
 const AWAKENING_COPIES_NEEDED = 3;
@@ -42,6 +71,10 @@ export function GardenScreen({
   onBondCard,
   onAwakenBondCard,
   onConsumePotion,
+  onBondTrait,
+  onUnbondTrait,
+  onEquipItem,
+  onUnequipItem,
   onToggleTechnique,
 }: GardenScreenProps) {
   // Bond Cards are one-time use (roadmap.md, corrected 2026-08-20): bonding
@@ -63,6 +96,21 @@ export function GardenScreen({
       (entry): entry is { card: PotionCard; poolIndex: number } =>
         entry.card.type === 'potion' && !usedPoolIndices.has(entry.poolIndex),
     );
+  // Traits/Items are shown for the WHOLE pool, not gated by usedPoolIndices
+  // (that set only ever tracks one-time-use Bond/Potion spends) — see
+  // withEquippedFlag's doc comment for how "equipped" is derived per copy.
+  const traitEntries = withEquippedFlag(
+    pool
+      .map((card, poolIndex) => ({ card, poolIndex }))
+      .filter((e): e is { card: TraitCard; poolIndex: number } => e.card.type === 'trait'),
+    chao.traits,
+  );
+  const itemEntries = withEquippedFlag(
+    pool
+      .map((card, poolIndex) => ({ card, poolIndex }))
+      .filter((e): e is { card: ItemCard; poolIndex: number } => e.card.type === 'item'),
+    chao.items,
+  );
   const techniqueCards = pool.filter((c): c is TechniqueCard => c.type === 'technique');
   const loadedTechniques = techniqueCards.filter((c) => selectedTechniqueIds.has(c.id));
 
@@ -174,6 +222,38 @@ export function GardenScreen({
         <div className="card-grid">
           {unusedPotionEntries.map(({ card, poolIndex }) => (
             <CardBadge key={poolIndex} card={card} onClick={() => onConsumePotion(card, poolIndex)} />
+          ))}
+        </div>
+
+        <h3>Traits ({chao.traits.length}/{MAX_TRAITS} active)</h3>
+        <p className="hint-text">
+          Always-on passive effects that fire during Races. Click to bond (costs Fruit); click an active one to
+          unbond and free the slot (no refund).
+        </p>
+        <div className="card-grid">
+          {traitEntries.map(({ card, poolIndex, equipped }) => (
+            <CardBadge
+              key={poolIndex}
+              card={card}
+              selected={equipped}
+              onClick={() => (equipped ? onUnbondTrait(card) : onBondTrait(card))}
+            />
+          ))}
+        </div>
+
+        <h3>Items ({chao.items.length} equipped)</h3>
+        <p className="hint-text">
+          Freely re-equippable gear — a passive stat bonus or a Race-time effect. Click to equip (costs Fruit); click
+          an equipped one to unequip (no refund).
+        </p>
+        <div className="card-grid">
+          {itemEntries.map(({ card, poolIndex, equipped }) => (
+            <CardBadge
+              key={poolIndex}
+              card={card}
+              selected={equipped}
+              onClick={() => (equipped ? onUnequipItem(card) : onEquipItem(card))}
+            />
           ))}
         </div>
 

@@ -125,6 +125,40 @@ describe('fireTriggers', () => {
     expect(roundStartResult.events).toContainEqual({ type: 'fruit_gained', amount: 2, reason: technique.id });
   });
 
+  it('enforces a per_race onceLimit across repeated calls via the returned firedOnce set', () => {
+    const trait = makeTrait({
+      effect: {
+        trigger: { on: 'leg_start' },
+        apply: [{ op: 'modifyStat', stat: 'power', amount: 10 }],
+        onceLimit: 'per_race',
+      },
+    });
+    const chao = { ...createChao({ id: 'c1', name: 'Test', bornGeneration: 1 }), traits: [trait] };
+
+    const first = fireTriggers(chao, [], (t) => t.on === 'leg_start');
+    expect(first.chao.stats.power).toBe(10);
+
+    // Simulate a second Leg of the same type within the same Race by
+    // threading firedOnce through, as race.ts now does.
+    const second = fireTriggers(first.chao, [], (t) => t.on === 'leg_start', first.firedOnce);
+    expect(second.chao.stats.power).toBe(10); // unchanged — the onceLimit blocked a second firing
+  });
+
+  it('does not enforce a limit when firedOnce is not threaded through (a fresh call each time)', () => {
+    const trait = makeTrait({
+      effect: {
+        trigger: { on: 'leg_start' },
+        apply: [{ op: 'modifyStat', stat: 'power', amount: 10 }],
+        onceLimit: 'per_race',
+      },
+    });
+    const chao = { ...createChao({ id: 'c1', name: 'Test', bornGeneration: 1 }), traits: [trait] };
+
+    const first = fireTriggers(chao, [], (t) => t.on === 'leg_start');
+    const second = fireTriggers(first.chao, [], (t) => t.on === 'leg_start'); // no firedOnce passed
+    expect(second.chao.stats.power).toBe(20);
+  });
+
   it('threads the Chao through multiple matching triggerables in sequence', () => {
     const traitA = makeTrait({ id: 'trait.a' });
     const traitB = makeTrait({

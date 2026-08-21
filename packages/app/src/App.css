@@ -87,6 +87,13 @@ body {
   color: #c7ccd6;
 }
 
+.card-badge-flavor {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #7d8493;
+  margin-top: 0.25rem;
+}
+
 .hint-text {
   font-size: 0.8rem;
   color: #9aa0ab;

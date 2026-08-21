@@ -6,6 +6,7 @@ import type {
   DraftState,
   Environment,
   InterludeDraftState,
+  ItemCard,
   NextTournamentSetup,
   PotionCard,
   RaceResult,
@@ -13,13 +14,16 @@ import type {
   StatColor,
   TechniqueCard,
   TournamentState,
+  TraitCard,
 } from '@chao-draft/sim';
 import {
   addAvailableSeed,
   advancePlayerGroupRace,
   advanceTick,
+  applyFruitEvents,
   awakenBondCardWithCost,
   bondCardWithSplashTax,
+  bondTraitWithCost,
   buildCardPool,
   computeBreedingPools,
   computeRaceTiming,
@@ -33,7 +37,9 @@ import {
   createRng,
   createTournament,
   DEFAULT_SPLASH_TAX,
+  equipItemWithCost,
   FRUIT_COST_BY_RARITY,
+  MAX_TRAITS,
   pickInterludeCard as pickInterludeCardOnState,
   plantSeed as plantSeedOnEnvironment,
   prepareNextTournament,
@@ -42,6 +48,8 @@ import {
   startRound,
   triggerFruitGain,
   triggerInitialFruitGain,
+  unbondTrait as unbondTraitOnChao,
+  unequipItem as unequipItemOnChao,
 } from '@chao-draft/sim';
 import { narrateDraftPick, narrateSimEvent } from './narration';
 
@@ -404,6 +412,109 @@ export function useGame() {
     [tournament, environment, appendLog],
   );
 
+  // Trait/Item bonding (added 2026-08-21 — until now chao.traits/chao.items
+  // could never actually be populated by anything in the app). Traits are
+  // capped at MAX_TRAITS and cost Fruit like a Bond Card (own color + splash
+  // tax); a full roster is reported distinctly from a poor one via
+  // result.reason, matching bondTraitWithCost's own doc comment. Unlike
+  // Bond/Potion cards, Trait/Item pool copies are NOT marked used/spent
+  // here — they're freely re-equippable (Chao.items' doc comment), so
+  // usedPoolIndices intentionally stays untouched; the Garden UI instead
+  // tracks which are *currently equipped* by asking the live Chao directly
+  // (chao.traits/chao.items), the same source of truth bonding reads from.
+  const bondTrait = useCallback(
+    (card: TraitCard) => {
+      if (!tournament || !environment) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const result = bondTraitWithCost(playerChao, environment, card, DEFAULT_SPLASH_TAX);
+
+      if (!result.ok) {
+        const message =
+          result.reason === 'slots_full'
+            ? `Can't bond ${card.name} — only ${MAX_TRAITS} Traits can be active at once. Unbond one first.`
+            : `Can't bond ${card.name} — needs ${describeFruitShortfall(environment, card.color, FRUIT_COST_BY_RARITY[card.rarity], computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX))}.`;
+        setActionMessage(message);
+        appendLog([message]);
+        return;
+      }
+
+      setActionMessage(null);
+      setTournament({
+        ...tournament,
+        entrants: {
+          ...tournament.entrants,
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+        },
+      });
+      setEnvironment(result.environment);
+      const costNote = formatCostNote(card.color, result.costPaid, result.costFromColorless, result.taxPaid);
+      appendLog([`${card.name} bonds as a Trait${costNote}.`]);
+    },
+    [tournament, environment, appendLog],
+  );
+
+  const unbondTrait = useCallback(
+    (card: TraitCard) => {
+      if (!tournament) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const nextChao = unbondTraitOnChao(playerChao, card.id);
+      setTournament({
+        ...tournament,
+        entrants: {
+          ...tournament.entrants,
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: nextChao },
+        },
+      });
+      appendLog([`${card.name} unbonded — no refund, but the slot is free.`]);
+    },
+    [tournament, appendLog],
+  );
+
+  const equipItem = useCallback(
+    (card: ItemCard) => {
+      if (!tournament || !environment) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const result = equipItemWithCost(playerChao, environment, card);
+
+      if (!result.ok) {
+        const cost = FRUIT_COST_BY_RARITY[card.rarity];
+        const message = `Can't equip ${card.name} — needs ${describeFruitShortfall(environment, 'colorless', cost, 0)}.`;
+        setActionMessage(message);
+        appendLog([message]);
+        return;
+      }
+
+      setActionMessage(null);
+      setTournament({
+        ...tournament,
+        entrants: {
+          ...tournament.entrants,
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
+        },
+      });
+      setEnvironment(result.environment);
+      appendLog([`${card.name} equipped (paid ${result.costPaid} Wildcard Fruit).`]);
+    },
+    [tournament, environment, appendLog],
+  );
+
+  const unequipItem = useCallback(
+    (card: ItemCard) => {
+      if (!tournament) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const nextChao = unequipItemOnChao(playerChao, card.id);
+      setTournament({
+        ...tournament,
+        entrants: {
+          ...tournament.entrants,
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: nextChao },
+        },
+      });
+      appendLog([`${card.name} unequipped — no refund, but freely re-equippable later.`]);
+    },
+    [tournament, appendLog],
+  );
+
   const plantSeed = useCallback(
     (seedIndex: number, slotIndex: number) => {
       if (!environment) return;
@@ -425,8 +536,12 @@ export function useGame() {
       Object.values(outcome.state.entrants).map((meta) => [meta.chao.id, meta.chao.name]),
     );
     setTournament(outcome.state);
-    // Fruit trigger fires after every race, GDD §6.9.
-    const envAfterRace = triggerFruitGain(environment);
+    // Fruit trigger fires after every race, GDD §6.9, plus any `fruit_gained`
+    // events a Trait/Item/keyword/Technique produced during the Race itself
+    // (applyFruitEvents — added 2026-08-21 alongside the Trait/Item rewrite;
+    // previously grantFruit ops were narrated in the log but never actually
+    // credited to the Environment, a real gap the audit for this task found).
+    const envAfterRace = applyFruitEvents(triggerFruitGain(environment), outcome.raceEvents);
     setRaceResult({
       entries: buildRaceResultEntries(
         outcome.ranking,
@@ -500,7 +615,7 @@ export function useGame() {
       Object.values(outcome.state.entrants).map((meta) => [meta.chao.id, meta.chao.name]),
     );
     setTournament(outcome.state);
-    setEnvironment(triggerFruitGain(environment));
+    setEnvironment(applyFruitEvents(triggerFruitGain(environment), outcome.raceEvents));
     setRaceResult({
       entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, undefined, tournament.playerChaoId),
       isFinalRace: true,
@@ -627,6 +742,10 @@ export function useGame() {
     bondBondCard,
     awakenBondCard,
     consumePotionCard,
+    bondTrait,
+    unbondTrait,
+    equipItem,
+    unequipItem,
     plantSeed,
     toggleTechnique,
     runNextGroupRace,

@@ -1,6 +1,15 @@
 import type { Rng } from '../rng';
-import type { BondCard, Chao, HabitatCard, PotionCard, Rarity, SeedCard, SimEvent, StatColor } from '../types';
-import { awakenBondCard, bondCard, type BondResult, computeSplashTax, consumePotion } from '../chao/bonding';
+import type { BondCard, Chao, HabitatCard, ItemCard, PotionCard, Rarity, SeedCard, SimEvent, StatColor, TraitCard } from '../types';
+import {
+  awakenBondCard,
+  bondCard,
+  type BondResult,
+  bondTrait,
+  computeSplashTax,
+  consumePotion,
+  equipItem,
+  MAX_TRAITS,
+} from '../chao/bonding';
 
 // The Environment (GDD §6.9, roadmap.md Phase 4) — separate from the Chao,
 // scoped to a single Chao's support structure. Exactly 3 Habitat Slots; a
@@ -254,6 +263,26 @@ export function triggerInitialFruitGain(environment: Environment): Environment {
   return { ...environment, fruit };
 }
 
+// Credits every `fruit_gained` event in a batch (a Race's worth of Trait/
+// Item/keyword/Technique firings, typically) into the Environment — added
+// 2026-08-21: this event existed and was already narrated in the log
+// ("+3 Fruit (...)") from the very first version of the trigger system, but
+// nothing had ever actually applied it to `environment.fruit` — a real gap
+// found while auditing the trigger system to "hook Traits into races",
+// since a from-scratch Trait/Item rewrite was about to start actually using
+// grantFruit ops for the first time. Always credited to colorless: a
+// grantFruit EffectOp carries no color of its own (types.ts), so Wildcard
+// Fruit is the only bucket that makes sense to land it in.
+export function applyFruitEvents(environment: Environment, events: SimEvent[]): Environment {
+  let fruit = environment.fruit;
+  for (const event of events) {
+    if (event.type === 'fruit_gained') {
+      fruit = { ...fruit, colorless: fruit.colorless + event.amount };
+    }
+  }
+  return { ...environment, fruit };
+}
+
 // Charges a base cost (in the card's own color) plus an optional splash tax
 // (always colorless). Fixed 2026-08-21 — a real bug in the first draft of
 // this system, caught by the user hitting it directly: the base cost used to
@@ -405,4 +434,89 @@ export function consumePotionWithCost(
     costPaid: cost,
     costFromColorless: charge.baseCostFromColorless,
   };
+}
+
+export interface TraitBondCostResult {
+  chao: Chao;
+  environment: Environment;
+  events: SimEvent[];
+  ok: boolean;
+  // Distinguishes "no Fruit" from "no room" so the app layer can show the
+  // right message — a full Trait roster needs a different fix (unbond one
+  // first) than a poor one does (bank more Fruit).
+  reason?: 'insufficient_fruit' | 'slots_full';
+  costPaid: number;
+  costFromColorless: number;
+  taxPaid: number;
+}
+
+// Bonds a Trait Card (added 2026-08-21, same cost pattern as
+// bondCardWithSplashTax): base Fruit cost in the card's own color, plus
+// splash tax if off the Chao's current color identity — a Trait's `color`
+// field feeds colorIdentity/alignment exactly like a Bond Card's does
+// (derived.ts), so it's exposed to the same off-identity surcharge. Checks
+// MAX_TRAITS before spending anything — a blocked-on-room case shouldn't
+// cost Fruit at all, unlike a blocked-on-Fruit case (which also spends
+// nothing, since chargeFruit only mutates on success).
+export function bondTraitWithCost(
+  chao: Chao,
+  environment: Environment,
+  card: TraitCard,
+  baseTax: number,
+): TraitBondCostResult {
+  if (chao.traits.length >= MAX_TRAITS) {
+    return { chao, environment, events: [], ok: false, reason: 'slots_full', costPaid: 0, costFromColorless: 0, taxPaid: 0 };
+  }
+  const cost = FRUIT_COST_BY_RARITY[card.rarity];
+  const tax = computeSplashTax(chao, card, baseTax);
+  const charge = chargeFruit(environment.fruit, card.color, cost, tax);
+  if (!charge.ok) {
+    return {
+      chao,
+      environment,
+      events: [],
+      ok: false,
+      reason: 'insufficient_fruit',
+      costPaid: 0,
+      costFromColorless: 0,
+      taxPaid: 0,
+    };
+  }
+  const { chao: bonded, events } = bondTrait(chao, card);
+  return {
+    chao: bonded,
+    environment: { ...environment, fruit: charge.fruit },
+    events,
+    ok: true,
+    costPaid: cost,
+    costFromColorless: charge.baseCostFromColorless,
+    taxPaid: tax,
+  };
+}
+
+export interface ItemEquipCostResult {
+  chao: Chao;
+  environment: Environment;
+  events: SimEvent[];
+  ok: boolean;
+  costPaid: number;
+}
+
+// Equips an Item Card (added 2026-08-21 — "items need to have a purpose,
+// currently they do nothing"). Base Fruit cost only, always paid from
+// colorless: ItemCard.color is always 'colorless' (types.ts), so there's no
+// off-identity splash tax to speak of and no "own color" bucket to draw
+// from first — chargeFruit's color==='colorless' branch already handles
+// charging a flat amount straight out of Wildcard Fruit. Uncapped (no
+// MAX_TRAITS-style room check) and freely re-equippable — unequipItem
+// (chao/bonding.ts) is a plain sim call with no cost, not a cost-wrapped
+// one, since taking gear off spends nothing.
+export function equipItemWithCost(chao: Chao, environment: Environment, card: ItemCard): ItemEquipCostResult {
+  const cost = FRUIT_COST_BY_RARITY[card.rarity];
+  const charge = chargeFruit(environment.fruit, 'colorless', cost, 0);
+  if (!charge.ok) {
+    return { chao, environment, events: [], ok: false, costPaid: 0 };
+  }
+  const { chao: equipped, events } = equipItem(chao, card);
+  return { chao: equipped, environment: { ...environment, fruit: charge.fruit }, events, ok: true, costPaid: cost };
 }

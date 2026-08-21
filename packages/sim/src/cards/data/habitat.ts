@@ -15,6 +15,7 @@ export const sunlitMeadow: HabitatCard = {
   rarity: 'common',
   type: 'habitat',
   color: 'green',
+  flavorText: 'Grass tall enough to hide in, and Fruit that never seems to run out.',
   fixedColors: ['green'],
   fruitPerRound: 2,
 };
@@ -25,6 +26,7 @@ export const windsweptCliff: HabitatCard = {
   rarity: 'common',
   type: 'habitat',
   color: 'red',
+  flavorText: 'The wind never stops moving here. Neither does anything that lives on it.',
   fixedColors: ['red'],
   fruitPerRound: 2,
 };
@@ -35,6 +37,7 @@ export const ironQuarry: HabitatCard = {
   rarity: 'common',
   type: 'habitat',
   color: 'black',
+  flavorText: 'Every rock here has been hit at least once. Most have been hit twice.',
   fixedColors: ['black'],
   fruitPerRound: 2,
 };
@@ -45,6 +48,7 @@ export const cloudTerrace: HabitatCard = {
   rarity: 'common',
   type: 'habitat',
   color: 'blue',
+  flavorText: 'Built on nothing solid, and somehow the sturdiest ground around.',
   fixedColors: ['blue'],
   fruitPerRound: 2,
 };
@@ -55,6 +59,7 @@ export const tidepoolCove: HabitatCard = {
   rarity: 'common',
   type: 'habitat',
   color: 'white',
+  flavorText: 'The tide leaves something behind every time it visits.',
   fixedColors: ['white'],
   fruitPerRound: 2,
 };

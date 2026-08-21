@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { pickRandom, rollInRange, shuffle } from '../rng';
-import type { Chao, SimEvent, Stat, TechniqueCard, TriggerCondition } from '../types';
+import type { Chao, EffectOp, SimEvent, Stat, TechniqueCard, TriggerCondition } from '../types';
 import { fireTriggers, resetCurrentStamina } from './shared';
 
 // Climb and Jump added 2026-08-20 (roadmap.md Phase 2, GDD §5.1) — genuinely
@@ -155,6 +155,10 @@ export function resolveRace(
 ): RaceResult {
   let chao = resetCurrentStamina(participant.chao);
   const events: SimEvent[] = [];
+  // Threaded through every fireTriggers call this Race so a `per_race`
+  // onceLimit (shared.ts) is enforced across the whole course, not just
+  // within one checkpoint — added 2026-08-21 alongside that enforcement.
+  let firedOnce: ReadonlySet<string> = new Set();
 
   // 'manual' effects (Second Wind, Tortoiseshell Ward's autoResolveDNF) are
   // treated as firing once at race start — GDD §6.3 frames them as "loaded
@@ -164,19 +168,31 @@ export function resolveRace(
     chao,
     participant.loadedTechniques,
     (t) => t.on === 'race_start' || t.on === 'manual',
+    firedOnce,
   );
   chao = raceStart.chao;
   events.push(...raceStart.events);
+  firedOnce = raceStart.firedOnce;
   const cannotDNF = raceStart.controlOps.some((op) => op.op === 'autoResolveDNF');
 
   let legsCompleted = 0;
   let finished = true;
 
   for (const leg of config.legs) {
-    const legStart = fireTriggers(chao, participant.loadedTechniques, legStartPredicate(leg.type));
+    const legStart = fireTriggers(chao, participant.loadedTechniques, legStartPredicate(leg.type), firedOnce);
     chao = legStart.chao;
     events.push(...legStart.events);
+    firedOnce = legStart.firedOnce;
     const autoWin = legStart.controlOps.some((op) => op.op === 'autoWinLeg');
+    // Added 2026-08-21 alongside `altStat` (types.ts): a matching
+    // grantAlternateRoute swaps which stat this Leg checks — same
+    // difficulty, different stat — rather than auto-succeeding outright,
+    // so "walks the riverbed instead of swimming" still has to actually
+    // clear the check on the alternate stat.
+    const alternateRoute = legStart.controlOps.find(
+      (op): op is Extract<EffectOp, { op: 'grantAlternateRoute' }> =>
+        op.op === 'grantAlternateRoute' && op.legType === leg.type,
+    );
 
     // `stat`/`difficulty` (added for roadmap.md's race-timing follow-up)
     // record whichever check actually decided this Leg, so a later
@@ -194,18 +210,19 @@ export function resolveRace(
       // Both the "do you take the shortcut" check and the shortcut leg
       // itself are resolved against the fork's Fly/Swim stat, not the leg's
       // normal stat — you're flying/swimming across, not running (GDD §6.2).
-      // Only the non-shortcut path uses the leg's own stat.
+      // Only the non-shortcut path uses the leg's own stat (or an alternate
+      // route's stat, if one was granted).
       const tookShortcut = checkLeg(chao, leg.fork.shortcutStat, leg.fork.shortcutThreshold, rng);
       if (tookShortcut) {
         usedStat = leg.fork.shortcutStat;
         usedDifficulty = leg.fork.shortcutDifficulty;
       } else {
-        usedStat = LEG_STAT[leg.type];
+        usedStat = alternateRoute?.altStat ?? LEG_STAT[leg.type];
         usedDifficulty = leg.difficulty;
       }
       success = checkLeg(chao, usedStat, usedDifficulty, rng);
     } else {
-      usedStat = LEG_STAT[leg.type];
+      usedStat = alternateRoute?.altStat ?? LEG_STAT[leg.type];
       usedDifficulty = leg.difficulty;
       success = checkLeg(chao, usedStat, usedDifficulty, rng);
     }
@@ -222,10 +239,26 @@ export function resolveRace(
 
     if (success) {
       legsCompleted++;
-      const legWon = fireTriggers(chao, participant.loadedTechniques, (t) => t.on === 'leg_won');
+      const legWon = fireTriggers(chao, participant.loadedTechniques, (t) => t.on === 'leg_won', firedOnce);
       chao = legWon.chao;
       events.push(...legWon.events);
+      firedOnce = legWon.firedOnce;
     }
+
+    // Checked fresh every Leg (not just once) so a "below X% Stamina" effect
+    // keeps being available for as long as the Chao stays under threshold —
+    // `per_race` onceLimit (if the card sets one) still caps it to a single
+    // firing across the whole course, same as any other checkpoint.
+    const staminaFraction = chao.currentStamina / chao.stats.stamina;
+    const staminaBelow = fireTriggers(
+      chao,
+      participant.loadedTechniques,
+      (t) => t.on === 'stamina_below' && staminaFraction <= t.fraction,
+      firedOnce,
+    );
+    chao = staminaBelow.chao;
+    events.push(...staminaBelow.events);
+    firedOnce = staminaBelow.firedOnce;
 
     if (chao.currentStamina <= 0 && !cannotDNF) {
       finished = false;
@@ -233,6 +266,16 @@ export function resolveRace(
       break;
     }
   }
+
+  const outcome = finished ? 'finished' : 'dnf';
+  const raceEnd = fireTriggers(
+    chao,
+    participant.loadedTechniques,
+    (t) => t.on === 'race_end' && (t.outcome === undefined || t.outcome === outcome),
+    firedOnce,
+  );
+  chao = raceEnd.chao;
+  events.push(...raceEnd.events);
 
   return { finished, legsCompleted, finalChao: chao, events };
 }

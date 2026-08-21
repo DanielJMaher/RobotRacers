@@ -1,4 +1,5 @@
 import type { Card } from '@chao-draft/sim';
+import { describeStaticModifier, describeTriggeredEffect } from '../game/narration';
 import { CardArt } from './CardArt';
 
 interface CardBadgeProps {
@@ -38,13 +39,18 @@ function formatStatGrant(grant: { stat: string; min: number; max: number }): str
 
 function describeCard(card: Card): string {
   switch (card.type) {
-    case 'bond':
+    case 'bond': {
       // Each grant carries its own region now (a card can touch several) —
       // GDD §3.5, corrected 2026-08-20 — so the region is shown per-grant
       // rather than once for the whole card.
-      return card.statGrants
+      const grants = card.statGrants
         .map((grant) => `${grant.region ?? '?'} ${formatStatGrant(grant)}`)
         .join(', ');
+      // Keyword description added 2026-08-21 (previously invisible — a
+      // Bond Card's keyword could fire during a Race with no way to see
+      // what it did short of reading the source data).
+      return card.keyword ? `${grants} — ${describeTriggeredEffect(card.keyword)}` : grants;
+    }
     case 'potion': {
       const grants = card.statGrants.map(formatStatGrant).join(', ');
       return card.secondaryColors && card.secondaryColors.length > 0
@@ -52,11 +58,11 @@ function describeCard(card: Card): string {
         : grants;
     }
     case 'technique':
-      return `${card.energyCost} energy`;
+      return `${card.energyCost} energy — ${describeTriggeredEffect(card.effect)}`;
     case 'trait':
-      return 'Trait';
+      return describeTriggeredEffect(card.effect);
     case 'item':
-      return 'Item';
+      return 'trigger' in card.effect ? describeTriggeredEffect(card.effect) : describeStaticModifier(card.effect);
     case 'habitat':
       return `+${card.fruitPerRound} Fruit/round`;
     case 'seed':
@@ -87,6 +93,7 @@ export function CardBadge({ card, onClick, selected }: CardBadgeProps) {
       </div>
       <div className="card-badge-rarity">{card.rarity}</div>
       <div className="card-badge-desc">{describeCard(card)}</div>
+      {card.flavorText && <div className="card-badge-flavor">{card.flavorText}</div>}
     </button>
   );
 }
