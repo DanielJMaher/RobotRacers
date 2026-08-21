@@ -122,24 +122,6 @@ export function TournamentPanel({
         </>
       )}
 
-      {tournament.phase === 'complete' && tournament.finalRanking && (
-        <>
-          <h4>Final Results</h4>
-          <ul className="final-results-list">
-            {tournament.finalRanking.map((id, index) => {
-              const meta = tournament.entrants[id]!;
-              return (
-                <li key={id}>
-                  {index + 1}
-                  {ordinalSuffix(index + 1)} — {meta.chao.name}
-                  {id === tournament.playerChaoId ? ' (You)' : ''}
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
-
       {tournament.phase === 'eliminated' && (
         <p>Your Chao was eliminated. No breeding pick this generation — the run is over.</p>
       )}

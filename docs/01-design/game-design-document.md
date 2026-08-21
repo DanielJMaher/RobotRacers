@@ -268,6 +268,8 @@ That's it — no randomness, no per-stat lean. Each parent contributes a flat 10
 
 Not decided yet, on purpose. For v1, a baby simply starts as a fresh Chao with **empty Bond Slots, no Traits, no Items** — a blank slate — with only its stats pre-seeded per the formula above. It does *not* yet get "a slightly modified base Chao" look, a partial inherited keyword, or the specialization-creeps-in-over-many-Tournaments curve the user originally described — all of that is real, good design that's being set aside for a dedicated future session rather than rushed alongside the simpler stat decision. Alignment is unaffected by this deferral: with no bonded cards at all, a v1 baby is simply Neutral by construction (§3.3), regardless of parentage — exactly the fallback case the original proposal already called out.
 
+**Implemented 2026-08-20 (roadmap.md Phase 5).** `tournament/breeding.ts`'s `computeBreedingPools`/`breedChao`/`prepareNextTournament` are exactly the above, with one decision made at implementation time that the docs hadn't pinned down: **if the player is one of the 3 finalists and breeds, their own baby becomes the Chao they actually play as in the next Tournament** — inherited stats, then a fresh Draft Booster and normal bonding on top of that baseline — rather than the player always starting fresh regardless of breeding outcome. The other 2 finalists' babies still become NPC lineage entrants either way. See §6.5's implementation note for how this fits the next-Tournament roster.
+
 ### 6.5 Tournament-to-tournament progression
 
 **Resolved 2026-08-20, and much simpler than the earlier "persistent pool" framing suggested.** There is no abstract pool for now — just direct lineage carryover, literal Chao (not stat templates), tracked with real parent/child links:
@@ -277,13 +279,17 @@ Not decided yet, on purpose. For v1, a baby simply starts as a fresh Chao with *
 - **Scope (resolved):** local to the player's own save, for now. This will want to be multiplayer/shared eventually (a natural bridge to the async-ghost idea in §7), but that's explicitly not soon.
 - **Documented future enhancement, not built now:** pulling from the broader pool of *eliminated* (non-finalist) Chao to help generate Gen 2 through Gen X entrants — a genuine "rolling lineage" where losers' bloodlines can also resurface, not just the 3 finalists' — is good design, deliberately deferred rather than built alongside this simpler v1.
 
-See §6.8 for how a player actually inspects this lineage in play.
+See §6.8 for how a player actually inspects this lineage in play — **not built yet** (deliberately deferred, roadmap.md Phase 5), see that section's own implementation note.
+
+**Implemented 2026-08-20 (roadmap.md Phase 5).** `prepareNextTournament` does exactly the 3-babies-plus-21-fresh split above, drawing all 24 next-Tournament names from one shared shuffle so nothing collides. Verified live: a Gen-2 Chao correctly carried a lineage name (not "Your Chao") with non-zero inherited stats the moment its Draft Booster completed, confirming the player was genuinely playing as their own baby (§6.4's implementation note) rather than a blank Chao.
 
 ### 6.6 Scoring & Elimination
 
 - **Elimination is final.** If the player's Chao is eliminated from the bracket and isn't chosen by any of the three Final Race finalists as a breeding partner, the run ends — full stop, no soft continuation, no fresh Chao handed to the player. This was a deliberate choice (confirmed 2026-08-20), consistent with pillar #4's "should genuinely end."
 - **Score (decided 2026-08-20):** each race awards points by placement — **1st place scores 6, then 1 fewer per place behind** (2nd: 5, 3rd: 4, 4th: 3, 5th: 2, 6th: 1), summed across every race the player's Chao runs over the whole Tournament. A DNF is treated as last place for that race's field (lowest score available, not zero — a DNF still isn't worse than showing up dead last, it just doesn't out-rank anyone). **Technical prerequisite this exposes:** scoring every place, not just picking out the last-place eliminee, means the Race resolver needs to rank *all* racers in a group against each other, not just resolve the player's one Chao in isolation — group-stage elimination already implicitly needed this (you can't identify "last place" without ranking everyone), so this doesn't add new scope, it just makes explicit that Phase 3's bracket work needs full-field ranking, not single-Chao pass/fail.
 - The player can inspect their Chao at any time — both its stats and its current visual/cosmetic state.
+
+**Implementation-time clarification (2026-08-20, roadmap.md Phase 5):** the "and isn't chosen by any of the three Final Race finalists as a breeding partner" clause above reads, taken literally, as a possible rescue mechanic — an early-eliminated Chao surviving into the next Tournament if some finalist later happens to pick them as a partner. **Decided against this**: elimination is instantly and unconditionally final the moment it happens, with no dependency on later breeding picks. Reaching the Final Race is the only path that ever leads to a breeding pick, since the group-stage elimination logic (already shipped in Phase 3, unchanged here) ends the run outright before the Final Race is ever reached. The quoted clause is being left as-written rather than edited, since it doesn't materially conflict with play in practice — every entrant who ever gets *chosen* as a breeding partner is, by construction, chosen from among entrants still tracked in that Tournament's roster, and the player either reaches the Final Race and breeds, or doesn't and the run is over; there's no third case this clause was actually needed to resolve.
 
 ### 6.7 Entrant generation & scouting
 
@@ -314,6 +320,8 @@ Beyond the fuzzy scouting read (§6.7), any entrant can be opened into a full **
 - **Lineage tab** — the entrant's full ancestry chain, each ancestor shown with its own overall record and Height/Weight (or a picture, once art exists) to gauge build at a glance.
 
 The point of all of this, per the user: it gives the player genuine information to refine strategy and improve their odds — not just flavor. This is a real feature to design and build (data model: each Chao needs a stable id, parent-A/parent-B links, and a persisted record; the player's save needs a per-Chao-id and per-lineage head-to-head history), not implemented yet — tracked in roadmap.md.
+
+**Explicitly deferred at Phase 5 (2026-08-20), decided rather than merely delayed:** breeding, next-Tournament generation, and playing as your own baby (§6.4/§6.5) are all real and implemented; this section's inspection screen is not, since it needs the parent-id graph and persisted history above, neither of which exist yet, and wasn't required by Phase 5's own completion bar. Same treatment as Phase 4's deferred race-reward hooks — a deliberate scope cut, not an oversight.
 
 ### 6.9 The Environment: Habitats, Fruit, and Seeds (revived 2026-08-20)
 

@@ -1,4 +1,5 @@
 import './App.css';
+import { BreedingScreen } from './components/BreedingScreen';
 import { DraftScreen } from './components/DraftScreen';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
 import { EventLogPanel } from './components/EventLogPanel';
@@ -43,6 +44,15 @@ export function App() {
           interlude={game.interludeDraft}
           round={game.interludeRound}
           onPick={game.pickInterludeCard}
+        />
+      )}
+
+      {game.phase === 'breeding' && game.tournament && (
+        <BreedingScreen
+          tournament={game.tournament}
+          setup={game.breedingSetup}
+          onConfirmPartner={game.pickBreedingPartner}
+          onStartNextTournament={game.startNextTournament}
         />
       )}
 

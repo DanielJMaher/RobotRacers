@@ -7,6 +7,7 @@ import type {
   Environment,
   HabitatCard,
   InterludeDraftState,
+  NextTournamentSetup,
   RegimenCard,
   SeedCard,
   TechniqueCard,
@@ -18,6 +19,7 @@ import {
   advanceTick,
   bondCardWithSplashTax,
   buildCardPool,
+  computeBreedingPools,
   computeSplashTax,
   consumeRegimen as consumeRegimenOnChao,
   coreGardenSet,
@@ -31,6 +33,7 @@ import {
   pickInterludeCard as pickInterludeCardOnState,
   placeHabitatCard as placeHabitatCardOnEnvironment,
   plantSeed as plantSeedOnEnvironment,
+  prepareNextTournament,
   runFinalRace,
   startRound,
   triggerFruitGain,
@@ -42,7 +45,7 @@ const SEAT_COUNT = 4;
 const PLAYER_SEAT_INDEX = 0;
 const PLAYER_SEAT_ID = `seat-${PLAYER_SEAT_INDEX}`;
 
-export type Phase = 'draft' | 'habitat_placement' | 'tournament' | 'interlude';
+export type Phase = 'draft' | 'habitat_placement' | 'tournament' | 'interlude' | 'breeding';
 
 // Orchestrates one session: draft → place drawn Habitat cards (roadmap.md
 // Phase 4) → the Tournament bracket → an Environment Interlude Booster after
@@ -72,6 +75,15 @@ export function useGame() {
   const [extraPool, setExtraPool] = useState<Card[]>([]);
   const [interludeDraft, setInterludeDraft] = useState<InterludeDraftState | null>(null);
   const [interludeRound, setInterludeRound] = useState<1 | 2 | null>(null);
+  const [breedingSetup, setBreedingSetup] = useState<NextTournamentSetup | null>(null);
+  // Set by startNextTournament (roadmap.md Phase 5) right before kicking off
+  // a fresh Draft Booster for the next Tournament — consumed and cleared the
+  // moment that draft completes, so the player's baby (not a blank Chao)
+  // becomes their starting point and the pre-built lineage roster (2 other
+  // babies + 21 fresh) is what createTournament uses instead of generating
+  // 23 entirely fresh entrants.
+  const [pendingPlayerChao, setPendingPlayerChao] = useState<Chao | null>(null);
+  const [pendingOthers, setPendingOthers] = useState<Chao[] | null>(null);
   const [selectedTechniqueIds, setSelectedTechniqueIds] = useState<Set<string>>(new Set());
   const [log, setLog] = useState<string[]>([]);
 
@@ -113,7 +125,13 @@ export function useGame() {
 
       if (afterTick.isComplete) {
         const playerSeat = afterTick.seats[PLAYER_SEAT_INDEX]!;
-        const freshChao = createChao({ id: 'chao-1', name: 'Your Chao', bornGeneration: 1 });
+        // Tournament 2+ (roadmap.md Phase 5): startNextTournament stashed
+        // the player's own baby + the pre-built 23-entrant roster here right
+        // before this draft started. Tournament 1 has neither, so it falls
+        // back to a blank Chao and a fully-procedural 23 others, as before.
+        const freshChao =
+          pendingPlayerChao ?? createChao({ id: 'chao-1', name: 'Your Chao', bornGeneration: 1 });
+        const others = pendingOthers ?? undefined;
         const drawnHabitats = playerSeat.pool.filter((c): c is HabitatCard => c.type === 'habitat');
         const drawnSeeds = playerSeat.pool.filter((c): c is SeedCard => c.type === 'seed');
         let env = createEnvironment(drawnHabitats);
@@ -127,8 +145,10 @@ export function useGame() {
         // pass before this fix landed.
 
         setDraft(afterTick);
-        setTournament(createTournament(freshChao, rngRef.current));
+        setTournament(createTournament(freshChao, rngRef.current, others));
         setEnvironment(env);
+        setPendingPlayerChao(null);
+        setPendingOthers(null);
         setPhase('habitat_placement');
         appendLog([
           ...pickLines,
@@ -147,7 +167,7 @@ export function useGame() {
       setDraft(afterTick);
       appendLog(pickLines);
     },
-    [draft, appendLog],
+    [draft, pendingPlayerChao, pendingOthers, appendLog],
   );
 
   const placeHabitatCard = useCallback(
@@ -305,6 +325,12 @@ export function useGame() {
     );
     setTournament(outcome.state);
     setEnvironment(triggerFruitGain(environment));
+    // Reaching the Final Race always means placing 1st/2nd/3rd of 3, so the
+    // player always gets a breeding pick here (GDD §6.4) — decided
+    // 2026-08-20: elimination before the Final Race ends the run outright,
+    // with no rescue-by-breeding-pick mechanic, so this is the only path
+    // that ever reaches 'breeding'.
+    setPhase('breeding');
 
     appendLog([
       `--- Final Race (${outcome.course.legs.length} legs: ${outcome.course.legs.map((leg) => leg.type).join(', ')}) ---`,
@@ -312,6 +338,44 @@ export function useGame() {
       `Results: ${outcome.ranking.map((id, i) => `${i + 1}. ${nameById[id]}`).join(', ')}`,
     ]);
   }, [tournament, environment, loadedTechniques, appendLog]);
+
+  const pickBreedingPartner = useCallback(
+    (partnerId: string) => {
+      if (!tournament) return;
+      const pools = computeBreedingPools(tournament);
+      const setup = prepareNextTournament(tournament, pools, partnerId, rngRef.current);
+      setBreedingSetup(setup);
+      const nameById = Object.fromEntries(
+        Object.values(tournament.entrants).map((meta) => [meta.chao.id, meta.chao.name]),
+      );
+      appendLog(
+        setup.breeding.pairs.map(
+          (pair) => `${nameById[pair.finalistId]} breeds with ${nameById[pair.partnerId]} → ${pair.baby.name} is born.`,
+        ),
+      );
+    },
+    [tournament, appendLog],
+  );
+
+  const startNextTournament = useCallback(() => {
+    if (!breedingSetup) return;
+    setPendingPlayerChao(breedingSetup.playerBaby);
+    setPendingOthers(breedingSetup.others);
+    setDraft(
+      createDraft(
+        { seed: 1, seatCount: SEAT_COUNT, playerSeatIndex: PLAYER_SEAT_INDEX },
+        CARD_POOL,
+        rngRef.current,
+      ),
+    );
+    setTournament(null);
+    setEnvironment(null);
+    setExtraPool([]);
+    setSelectedTechniqueIds(new Set());
+    setBreedingSetup(null);
+    setPhase('draft');
+    appendLog([`--- ${breedingSetup.playerBaby.name}'s Tournament begins! Draft a fresh pool. ---`]);
+  }, [breedingSetup, appendLog]);
 
   const playerPack: Card[] = draft.isComplete ? [] : (draft.packsInFront[PLAYER_SEAT_INDEX] ?? []);
 
@@ -325,6 +389,7 @@ export function useGame() {
     environment,
     interludeDraft,
     interludeRound,
+    breedingSetup,
     selectedTechniqueIds,
     log,
     pickCard,
@@ -337,5 +402,7 @@ export function useGame() {
     runNextGroupRace,
     pickInterludeCard,
     runFinalRace: runFinalRaceHandler,
+    pickBreedingPartner,
+    startNextTournament,
   };
 }

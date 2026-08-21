@@ -102,12 +102,21 @@ function applySecondEvolution(chao: Chao): Chao {
 // raced all the way through their own Round 1 *and* Round 2 to a single top 3
 // (`round3Partner`, merged in once Round 2 ends) — none of that depends on
 // anything the player does, so it all happens right here, up front.
-export function createTournament(playerChao: Chao, rng: Rng): TournamentState {
-  const names = generateEntrantNames(23, rng);
-  const others = names.map((name, i) =>
-    generateEntrant(`entrant-${i}`, name, playerChao.bornGeneration, rng),
-  );
-  const shuffled = shuffle([playerChao, ...others], rng);
+//
+// `others` (roadmap.md Phase 5): pass the 23 non-player entrants explicitly
+// for a Tournament-to-tournament transition (2 lineage babies + 21 fresh,
+// built by `tournament/breeding.ts`'s `prepareNextTournament`) — omit it for
+// a fresh Tournament 1, which generates all 23 procedurally as before.
+export function createTournament(playerChao: Chao, rng: Rng, others?: Chao[]): TournamentState {
+  const resolvedOthers =
+    others ??
+    generateEntrantNames(23, rng).map((name, i) =>
+      generateEntrant(`entrant-${i}`, name, playerChao.bornGeneration, rng),
+    );
+  if (resolvedOthers.length !== 23) {
+    throw new Error(`createTournament: expected exactly 23 other entrants, got ${resolvedOthers.length}`);
+  }
+  const shuffled = shuffle([playerChao, ...resolvedOthers], rng);
   const groups: Chao[][] = [0, 1, 2, 3].map((g) => shuffled.slice(g * 6, g * 6 + 6));
 
   const playerGroupIdx = groups.findIndex((group) => group.some((c) => c.id === playerChao.id));
