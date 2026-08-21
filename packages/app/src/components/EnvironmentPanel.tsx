@@ -1,3 +1,4 @@
+import type { FruitPool } from '@chao-draft/sim';
 import { canPlantSeed, type Environment } from '@chao-draft/sim';
 
 interface EnvironmentPanelProps {
@@ -5,12 +6,31 @@ interface EnvironmentPanelProps {
   onPlantSeed: (seedIndex: number, slotIndex: number) => void;
 }
 
+// Fixed display order + emoji, matching CardBadge's own color labels.
+const FRUIT_ORDER: { key: keyof FruitPool; label: string }[] = [
+  { key: 'green', label: '🟢 Green' },
+  { key: 'red', label: '🔴 Red' },
+  { key: 'black', label: '⚫ Black' },
+  { key: 'blue', label: '🔵 Blue' },
+  { key: 'white', label: '⚪ White' },
+  { key: 'colorless', label: '◽ Wildcard' },
+];
+
 export function EnvironmentPanel({ environment, onPlantSeed }: EnvironmentPanelProps) {
   return (
     <div className="garden-column">
       <h3>Environment</h3>
-      <p>
-        Fruit: <strong>{environment.fruit}</strong>
+      {/* Per-color Fruit (playtest-prep, revised 2026-08-21) — replaces a
+          single pooled number now that every card costs Fruit in its own
+          color to use (useGame.ts's bondBondCard/consumePotionCard). Every
+          color is always shown, even at 0, so it's always clear at a
+          glance which colors are actually affordable right now. */}
+      <p className="fruit-breakdown">
+        {FRUIT_ORDER.map(({ key, label }) => (
+          <span key={key}>
+            {label}: <strong>{environment.fruit[key]}</strong>
+          </span>
+        ))}
       </p>
 
       <ul className="standings-list">

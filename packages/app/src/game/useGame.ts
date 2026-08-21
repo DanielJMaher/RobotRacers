@@ -18,13 +18,13 @@ import {
   addAvailableSeed,
   advancePlayerGroupRace,
   advanceTick,
-  awakenBondCard as awakenBondCardOnChao,
+  awakenBondCardWithCost,
   bondCardWithSplashTax,
   buildCardPool,
   computeBreedingPools,
   computeRaceTiming,
   computeSplashTax,
-  consumePotion as consumePotionOnChao,
+  consumePotionWithCost,
   coreGardenSet,
   createChao,
   createDraft,
@@ -33,6 +33,7 @@ import {
   createRng,
   createTournament,
   DEFAULT_SPLASH_TAX,
+  FRUIT_COST_BY_RARITY,
   pickInterludeCard as pickInterludeCardOnState,
   placeHabitatCard as placeHabitatCardOnEnvironment,
   plantSeed as plantSeedOnEnvironment,
@@ -40,6 +41,7 @@ import {
   runFinalRace,
   startRound,
   triggerFruitGain,
+  triggerInitialFruitGain,
 } from '@chao-draft/sim';
 import { narrateDraftPick, narrateSimEvent } from './narration';
 
@@ -89,6 +91,31 @@ const PLAYER_SEAT_INDEX = 0;
 const PLAYER_SEAT_ID = `seat-${PLAYER_SEAT_INDEX}`;
 
 export type Phase = 'draft' | 'habitat_placement' | 'tournament' | 'interlude' | 'breeding';
+
+// Every card now costs Fruit of its own color to use (playtest-prep,
+// revised 2026-08-21, per the user's direct request: "when we use a card we
+// are paying the card's cost in the appropriate colored fruit... there needs
+// to be a cost benefit struggle"). Previously an on-color bond was
+// completely free — only reaching off-identity ever cost anything, which is
+// exactly why there was no real economic tension to using an entire drafted
+// pool. Builds a clear "needs X, have Y" message covering both possible
+// shortfalls (the base cost in the card's own color, and/or the off-color
+// splash tax in Wildcard/colorless Fruit) rather than a single generic
+// failure line.
+function describeFruitShortfall(
+  environment: Environment,
+  color: BondCard['color'],
+  baseCost: number,
+  tax: number,
+): string {
+  const parts: string[] = [];
+  const haveOwn = environment.fruit[color];
+  if (haveOwn < baseCost) parts.push(`${baseCost} ${color} Fruit (have ${haveOwn})`);
+  if (tax > 0 && environment.fruit.colorless < tax) {
+    parts.push(`${tax} Wildcard Fruit for the off-color splash tax (have ${environment.fruit.colorless})`);
+  }
+  return parts.join(' and ');
+}
 
 // Orchestrates one session: draft → place drawn Habitat cards (roadmap.md
 // Phase 4) → the Tournament bracket → an Environment Interlude Booster after
@@ -241,7 +268,12 @@ export function useGame() {
     if (!environment) return;
     // Tournament-start Fruit trigger (GDD §6.9) — fires now, once Habitat
     // placement is finalized, so it reflects what the player actually placed.
-    setEnvironment(triggerFruitGain(environment));
+    // Doubled, plus a flat colorless bonus, ONLY here (playtest-prep,
+    // 2026-08-21, per the user's direct request) — a real opening budget now
+    // that every card costs Fruit to use (see bondBondCard/consumePotionCard
+    // below). The recurring after-every-race trigger stays at the normal
+    // rate (triggerFruitGain, used further down in this file).
+    setEnvironment(triggerInitialFruitGain(environment));
     setPhase('tournament');
     appendLog(['The Tournament begins — 24 entrants, 4 groups of 6.']);
   }, [environment, appendLog]);
@@ -253,8 +285,9 @@ export function useGame() {
       const result = bondCardWithSplashTax(playerChao, environment, card, DEFAULT_SPLASH_TAX, rngRef.current);
 
       if (!result.ok) {
-        const needed = computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX);
-        const message = `Can't bond ${card.name} — needs ${needed} Fruit splash tax (off-color), you have ${environment.fruit}.`;
+        const baseCost = FRUIT_COST_BY_RARITY[card.rarity];
+        const tax = computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX);
+        const message = `Can't bond ${card.name} — needs ${describeFruitShortfall(environment, card.color, baseCost, tax)}.`;
         setActionMessage(message);
         appendLog([message]);
         return;
@@ -276,57 +309,89 @@ export function useGame() {
       // always adds, never replaces, so the log just names the touched
       // regions rather than talking about a slot being occupied/replaced.
       const regions = Object.keys(card.bodyMutations).join(', ');
-      const taxNote = result.taxPaid > 0 ? ` (paid ${result.taxPaid} Fruit splash tax)` : '';
-      appendLog([`${card.name} bonds onto ${regions}${taxNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
+      const costNote =
+        result.taxPaid > 0
+          ? ` (paid ${result.baseCostPaid} ${card.color} Fruit + ${result.taxPaid} Wildcard splash tax)`
+          : ` (paid ${result.baseCostPaid} ${card.color} Fruit)`;
+      appendLog([`${card.name} bonds onto ${regions}${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
     },
     [tournament, environment, appendLog],
   );
 
   const awakenBondCard = useCallback(
     (card: BondCard, poolIndices: [number, number, number]) => {
-      if (!tournament) return;
+      if (!tournament || !environment) return;
       const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
-      const { chao: awakened, events } = awakenBondCardOnChao(playerChao, card);
+      const result = awakenBondCardWithCost(playerChao, environment, card, DEFAULT_SPLASH_TAX);
 
+      if (!result.ok) {
+        const baseCost = FRUIT_COST_BY_RARITY[card.rarity] * 3;
+        const tax = computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX);
+        const message = `Can't Awaken ${card.name} — needs ${describeFruitShortfall(environment, card.color, baseCost, tax)}.`;
+        setActionMessage(message);
+        appendLog([message]);
+        return;
+      }
+
+      setActionMessage(null);
       setTournament({
         ...tournament,
         entrants: {
           ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: awakened },
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
         },
       });
+      setEnvironment(result.environment);
       setUsedPoolIndices((prev) => {
         const next = new Set(prev);
         for (const i of poolIndices) next.add(i);
         return next;
       });
       const regions = Object.keys(card.bodyMutations).join(', ');
+      const costNote =
+        result.taxPaid > 0
+          ? ` (paid ${result.baseCostPaid} ${card.color} Fruit + ${result.taxPaid} Wildcard splash tax)`
+          : ` (paid ${result.baseCostPaid} ${card.color} Fruit)`;
       appendLog([
-        `★ ${card.name} Awakened! 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
-        ...events.map((e) => narrateSimEvent(e)),
+        `★ ${card.name} Awakened!${costNote} 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
+        ...result.events.map((e) => narrateSimEvent(e)),
       ]);
     },
-    [tournament, appendLog],
+    [tournament, environment, appendLog],
   );
 
   const consumePotionCard = useCallback(
     (card: PotionCard, poolIndex: number) => {
-      if (!tournament) return;
+      if (!tournament || !environment) return;
       const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
-      const { chao: fed, events } = consumePotionOnChao(playerChao, card, rngRef.current);
+      const result = consumePotionWithCost(playerChao, environment, card, rngRef.current);
+
+      if (!result.ok) {
+        const cost = FRUIT_COST_BY_RARITY[card.rarity];
+        const message = `Can't drink ${card.name} — needs ${describeFruitShortfall(environment, card.color, cost, 0)}.`;
+        setActionMessage(message);
+        appendLog([message]);
+        return;
+      }
+
+      setActionMessage(null);
       setTournament({
         ...tournament,
         entrants: {
           ...tournament.entrants,
-          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: fed },
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: result.chao },
         },
       });
+      setEnvironment(result.environment);
       // Potions are one-time use, same as Bond Cards (roadmap.md Phase 5.5) —
       // this specific drafted copy is spent the moment it's consumed.
       setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
-      appendLog([`${card.name} is consumed — spent.`, ...events.map((e) => narrateSimEvent(e))]);
+      appendLog([
+        `${card.name} is consumed (paid ${result.costPaid} ${card.color} Fruit) — spent.`,
+        ...result.events.map((e) => narrateSimEvent(e)),
+      ]);
     },
-    [tournament, appendLog],
+    [tournament, environment, appendLog],
   );
 
   const plantSeed = useCallback(

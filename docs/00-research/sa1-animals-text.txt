@@ -1,0 +1,796 @@
+Animals [SA1] - Chao Island
+Chao Island
+Animals [SA1]
+
+Type to start searching
+Home
+Info Center
+Guides
+Wiki
+Downloads & Mods
+Gallery
+3D Chao Viewer
+Media
+Community
+About Us
+Animals [SA1]
+“If you give a Chao a small animal, the Chao changes. Try experimenting using different animals.”
+Your browser does not support the
+audio
+element.
+There are five groups of animals, and each group has three animals. You can give animals to your Chao to make it stronger and to give it different personalities and looks. When you give a Chao an animal, it will embrace it, and attain its appearance, abilities, and behaviour. The animal will disappear shortly after you give it to a Chao.
+Destroy enemies to rescue the animals within
+Animals roaming around the garden
+A Chao absorbing the energies of an animal
+The animals are found inside the enemies in each level. Simply destroy an enemy to release the animal within, and then walk into it to pick it up. You can only carry up to ten animals at a time. When you enter the Chao Garden, all the animals currently collected by that character will leave you and run around the garden! The animals will sparkle if you have not given them to your Chao yet. Once you give them to your Chao, the sparkle will disappear and the animal will vanish from the garden after a while. The animals will stay in the garden even when you leave, except for on the Dreamcast where all items left in the garden disappear for good!
+The four common animal colours — yellow, purple, green, and red — all raise the primary stats: Swim, Fly, Run, and Power, respectively. They also influence the Chao to evolve into the corresponding type.
+The fifth colour — blue — influences the Chao to evolve into a random type.
+Note!
+On the modern games, all animals raise the Chao’s Luck and Intelligence slightly (20% of it’s hidden level up bar). The Dreamcast version of Sonic Adventure 1 does not have Luck or Intelligence stats at all.
+Dreamcast
+Stat
+Name
+Name
+Swim
+Fly
+Run
+Power
+Learnt Behaviour
+Swim
+Otter
++2.0
+0
+0
+0
+Chao performs the backstroke when swimming
+Swim
+Penguin
++1.6
++0.4
+0
+0
+Chao will nuzzle its head against the character
+Swim
+Seal
++1.6
+0
++0.4
+0
+Chao does the shake dance
+Fly
+Parrot
+0
++1.6
+0
++0.4
+Chao sings to itself
+Fly
+Peacock
+0
++1.2
++0.8
+0
+Chao lays down and poses
+Fly
+Swallow
+0
++2.0
+0
+0
+Chao does the spin dance
+Run
+Deer
+0
+0
++2.0
+0
+Chao bows
+Run
+Kangaroo
+0
+0
++1.2
++0.8
+Chao performs karate
+Run
+Rabbit
+0
++0.8
++1.2
+0
+Chao does somersaults
+Power
+Elephant
++0.4
+0
+0
++1.6
+Chao attempts sumo wrestling
+Power
+Lion
+0
+0
++0.4
++1.6
+Chao scratches its face
+Power
+Gorilla
+0
+0
+0
++2.0
+Chao beats a drum
+Random
+Koala Bear
++10
+to a
+random
+stat
+Chao plays the trumpet
+Random
+Mole
++10
+to a
+random
+stat
+Chao tries to dig the ground
+Random
+Skunk
++10
+to a
+random
+stat
+Chao draws a picture on the ground
+Modern
+A lot of the animal traits are different to the Dreamcast because they share traits with the modern Sonic Adventure 2 / Battle. The percentages shown are the percent of the
+level-up bar
+raised.
+Stat
+Name
+Name
+Swim
+Fly
+Run
+Power
+Learnt Behaviour
+Swim
+Otter
++44%
+-4%
++8%
+-16%
+Chao performs the backstroke when swimming
+Swim
+Penguin
++36%
++12%
++8%
+-24%
+Chao slides on its belly
+Swim
+Seal
++40%
+-16%
+0
++8%
+Chao rolls around
+Fly
+Parrot
+0
++48%
+-20%
++4%
+Chao sings
+Fly
+Peacock
++12%
++48%
+-16%
+-12%
+Chao lies down and poses
+Fly
+Swallow
++20%
++60%
+-24%
++16%
+Chao does backwards somersaults
+Run
+Deer
+-4%
+-12%
++32%
++16%
+Chao draws a picture on the ground
+Run
+Kangaroo
+-8%
+-8%
++40%
++8%
+Chao does the step dance
+Run
+Rabbit
+0
++8%
++40%
+-16%
+Chao hops about
+Power
+Elephant
+-8%
+-16%
++20%
++36%
+Chao does sit-ups
+Power
+Lion
++8%
+-16%
++4%
++36%
+Chao breakdances
+Power
+Gorilla
+-4%
+-8%
++4%
++40%
+Chao beats on its chest
+Random
+Koala Bear
++20%
++16%
++4%
++8%
+Allows hats to be worn
+Random
+Mole
++8%
++8%
++16%
++16%
+Chao performs forward rolls
+Random
+Skunk
++8%
++12%
++16%
++12%
+Chao farts
+Note!
+When given a Skunk (DC) or Deer (Modern), your Chao will sometimes draw a picture on the ground! Your Chao can draw a Chao or any Character it has a close bond with (
+Bond
+over 50).
+SA1 Small Animals
+Animals in the Chao Garden
+Small Animals
+Animals Actions [SADX]
+Animal Locations [SA1]
+Chao Island
+Home
+Announcements
+What are CHAO?
+Chao Info Center
+Forums
+Discord
+The Team
+Chao Info Center
+Chao Info Center
+Introduction
+About Chao
+Chao History
+Chao Basics
+Chao Basics
+Chao World
+Gardens [SA1]
+Gardens [SA2]
+Feeding
+Stats
+Chao Life-Cycle
+Chao Life-Cycle
+Chao Life-Cycle
+Hatching
+Alignment
+Evolution
+Death
+Training Chao [SA1]
+Training Chao [SA1]
+Animals
+Animal Locations
+Races
+Training Chao [SA2]
+Training Chao [SA2]
+Animals
+Animal Locations
+Chaos Drives
+Races
+Karate
+Advanced
+Advanced
+Colours
+Expressions
+Personality
+Age & Appearance
+Animal Parts
+Breeding
+Chaos Chao
+Kindergarten
+Kindergarten
+Overview
+Health Center
+Classroom
+Principal's Room
+Bulletin Board
+Fortune-Telling House
+Black Market
+Misc.
+Misc.
+Chao Transporter
+Secret Eggs [SA1]
+Omochao
+Character Chao
+Lost Chao
+Glitches
+Chao Island Guides
+Chao Island Guides
+Introduction
+Sonic Adventure
+Sonic Adventure
+Chao Adventure
+Chao Adventure
+Introduction
+Interface
+Stats
+Events
+Mini-Game
+Fruit
+Map
+In-Game Text
+Sprites
+Casinopolis Pinball
+Casinopolis Pinball
+Introduction
+Sonic Slots Table
+NiGHTS Table
+Emerald Locations
+Emerald Locations
+Introduction
+Speed Highway
+Casinopolis
+Red Mountain
+Lost World
+Sky Deck
+Sonic Adventure 2
+Sonic Adventure 2
+Chao Adventure 2
+Chao Adventure 2
+Introduction
+Interface
+Events
+Fruits & Seeds
+Scenes
+Game-Text
+Sprites
+Chao Containers
+Chao Containers
+Introduction
+Sonic
+Sonic
+City Escape
+Metal Harbor
+Green Forest
+Pyramid Cave
+Crazy Gadget
+Final Rush
+Knuckles
+Knuckles
+Wild Canyon
+Pumpkin Hill
+Aquatic Mine
+Death Chamber
+Meteor Herd
+Tails
+Tails
+Prison Lane
+Mission Street
+Hidden Base
+Eternal Engine
+Shadow
+Shadow
+Radical Highway
+White Jungle
+Sky Rail
+Final Chase
+Rouge
+Rouge
+Dry Lagoon
+Egg Quarters
+Security Hall
+Mad Space
+Eggman
+Eggman
+Iron Gate
+Sand Ocean
+Lost Colony
+Weapons Bed
+Cosmic Wall
+Cannons Core
+Cannons Core
+Cannons Core
+Special
+Special
+Green Hill Zone
+Lost Chao Guide
+Lost Chao Guide
+Introduction
+Sonic
+Sonic
+City Escape
+Metal Harbor
+Green Forest
+Pyramid Cave
+Crazy Gadget
+Final Rush
+Knuckles
+Knuckles
+Wild Canyon
+Pumpkin Hill
+Aquatic Mine
+Death Chamber
+Meteor Herd
+Tails
+Tails
+Prison Lane
+Mission Street
+Hidden Base
+Eternal Engine
+Shadow
+Shadow
+Radical Highway
+White Jungle
+Sky Rail
+Final Chase
+Rouge
+Rouge
+Dry Lagoon
+Egg Quarters
+Security Hall
+Mad Space
+Eggman
+Eggman
+Iron Gate
+Sand Ocean
+Lost Colony
+Weapons Bed
+Cosmic Wall
+Cannons Core
+Cannons Core
+Cannons Core
+Hidden Animals (TODO)
+Hidden Animals (TODO)
+Introduction
+Sonic
+Sonic
+City Escape
+Metal Harbor
+Green Forest
+Pyramid Cave
+Crazy Gadget
+Final Rush
+Knuckles
+Knuckles
+Wild Canyon
+Pumpkin Hill
+Aquatic Mine
+Death Chamber
+Meteor Herd
+Tails
+Tails
+Prison Lane
+Mission Street
+Hidden Base
+Eternal Engine
+Shadow
+Shadow
+Radical Highway
+White Jungle
+Sky Rail
+Final Chase
+Rouge
+Rouge
+Dry Lagoon
+Egg Quarters
+Security Hall
+Mad Space
+Eggman
+Eggman
+Iron Gate
+Sand Ocean
+Lost Colony
+Weapons Bed
+Cosmic Wall
+Cannons Core
+Cannons Core
+Cannons Core
+Special
+Special
+Green Hill Zone
+Version Differences
+Version Differences
+Generations
+Introduction
+Unreleased Chao Features (TODO)
+Unreleased Chao Features (TODO)
+Introduction
+Spin-Off Games
+Spin-Off Games
+Tiny Chao Garden
+Tiny Chao Garden
+Introduction
+Basics
+Basics
+Basics
+Items
+Linking
+Mini-Games
+Mini-Games
+Overview
+Chao Memory
+Rock-Paper-Scissors
+Chao Bounce
+Chao Ball
+Chao Search
+Misc
+Misc
+Bugs
+Hacking
+Sega Superstars
+Sega Superstars
+Tiny Chao Garden
+Phantasy Star Online
+Phantasy Star Online
+Tails Chao
+Sonic Chronicles
+Sonic Chronicles
+Full Guide
+Chao Hacking
+Chao Hacking
+Hacking (DC)
+Hacking (DC)
+Introduction
+Sonic Adventure
+Sonic Adventure 2
+Hacking (GC)
+Hacking (GC)
+Chao Genome Project
+Intro
+Hacking (PC)
+Hacking (PC)
+Introduction
+SADX (Retail)
+SADX (Steam)
+SA2B (Steam)
+Enums
+Chao Name Encoding
+Chao Offsets
+Chao Offsets
+Chao General
+Chao Evolution
+Chao Stats
+Chao Appearance
+Chao DNA
+Chao Character Bonds
+Chao Emotions
+Chao Health
+Chao Personality
+Garden Offsets
+Garden Offsets
+Garden Animals
+Garden Fruits
+Garden Hats
+Garden Seeds
+Black Market
+Code Extracts
+Code Extracts
+Chaos Chao Check
+Stat Level Up
+Chao Wiki
+Chao Wiki
+Main Page
+Downloads
+Downloads
+Introduction
+Getting Started
+PC Tools
+PC Tools
+Intro to Tools
+Fusion's Chao Editor
+Fusion's Chao Editor
+About
+Features
+Downloads
+Screenshots
+Version History
+Krzys2 Chao Editor
+Krzys2 Chao Editor
+About
+Download
+Version History
+Chao Exporter / Importer
+Chao Exporter / Importer
+About
+Instructions
+Download
+Version History
+Chao Calculator
+Chao Calculator
+About
+Download
+Version History
+Chao Randomizer
+Chao Randomizer
+About
+Download
+3D Chao Viewer
+3D Chao Viewer
+Downloads
+PC Mods
+PC Mods
+Intro to Mods
+Chao World Extended
+Chao World Extended
+About
+Download
+Features
+Features
+Main Package
+CWE Codes
+HD Textures
+DC Chao Gardens
+DC Cocoons
+Disable Jingle
+2P Chao Garden
+Choose Medals
+New Challenge Races
+Party Race Options
+CWE Mods
+CWE Mods
+New Race Pack
+Screenshots
+Screenshots
+Mod Features
+User Submitted
+Support
+Support
+Bugs
+FAQ
+Version History
+Bright Chao Fix
+Bright Chao Fix
+About
+Dreamcast Gardens
+Dreamcast Gardens
+About
+Texture Packs
+Texture Packs
+About
+Garden Packs
+Dreamcast Downloads
+Dreamcast Downloads
+VMU Chao Editor
+VMU Chao Editor
+About
+Features
+FAQ
+Download
+Version History
+VMU Chao Editor 2
+VMU Chao Editor 2
+About
+Features
+FAQ
+Download
+Version History
+Mobile Downloads
+Mobile Downloads
+3D Chao Viewer
+3D Chao Viewer
+Downloads
+Chao Gallery
+Chao Gallery
+Selector Tool
+Known Chao
+Chao Types
+Chao Types
+Child Chao
+Normal Type
+Swim Type
+Fly Type
+Run Type
+Power Type
+Chaos Chao
+Advanced Evolution
+Advanced Evolution
+Type Combinations
+Neutral Types
+Hero Types
+Dark Types
+Coloured Chao
+Coloured Chao
+Two-tone Chao
+Mono-tone Chao
+Jewel Chao
+Jewel Chao (DC)
+Shiny Chao
+Shiny Chao
+Shiny Two-tone Chao
+Shiny Mono-tone Chao
+Shiny-Jewel Differences
+Shiny-Jewel Chao (PC)
+Shiny-Jewel Chao (GC)
+Chao Accessories
+Chao Accessories
+Animal Parts [SA1]
+Animal Parts [SA2]
+Hats
+Race Medals
+Faces
+Chaos Drives
+Chao Faces
+Chao Faces
+Sonic Adventure DX
+Sonic Adventure 2
+Sonic Adventure [DC]
+Special Chao
+Special Chao
+Moon Chao
+Character Chao
+Hacked Chao
+Hacked Chao
+Egg Chao
+Omochao
+3D Chao Viewer
+3D Chao Viewer
+Main Program
+FAQ
+Media
+Media
+Introduction
+Artwork
+Wallpapers
+Colouring Pages
+Papercraft
+Chao Story!
+Jigsaw Puzzle
+Music
+Merchandise
+Community
+Community
+Introduction
+Code of Conduct
+Forums
+Forums
+Forum Index
+Discord
+Discord
+Discord
+Misc.
+Misc.
+Chao Island Daycare
+DeviantArt
+Steam
+About Chao Island
+About Chao Island
+Introduction
+History
+Team
+Contact
+Credits
+Mascot
+Previous
+Death
+Next
+Animal Locations [SA1]
+Copyright © 2021 Chao Island. All rights reserved.
+Chao, Sonic, Sonic Adventure, and Sonic Advance are © 1996-2006 SEGA.
