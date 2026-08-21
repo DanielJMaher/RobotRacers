@@ -1,4 +1,5 @@
 import type { Card } from '@chao-draft/sim';
+import { CardArt } from './CardArt';
 
 interface CardBadgeProps {
   card: Card;
@@ -79,6 +80,7 @@ export function CardBadge({ card, onClick, selected }: CardBadgeProps) {
         outline: selected ? '3px solid #22c55e' : 'none',
       }}
     >
+      <CardArt card={card} />
       <div className="card-badge-header">
         <span>{COLOR_LABEL[card.color]}</span>
         <strong>{card.name}</strong>
