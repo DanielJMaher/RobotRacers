@@ -177,6 +177,12 @@ body {
   background: #363c4a;
 }
 
+.slot-assign-btn[aria-pressed='true'] {
+  background: #20304a;
+  border-color: #4fb3e8;
+  font-weight: bold;
+}
+
 .slot-assign-btn:disabled {
   opacity: 0.35;
   cursor: default;

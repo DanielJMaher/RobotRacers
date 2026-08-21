@@ -100,6 +100,41 @@ function habitatColorOf(card: HabitatCard): StatColor {
   return color;
 }
 
+// Freely sets (or clears) slotIndex's color — the PRIMARY way a player gets
+// their 3 Habitat colors now (playtest-prep, added 2026-08-21, per the
+// user's direct request: "It is an open selection - I can choose any
+// habitat for any of the slots"). Replaces relying on the Draft Booster's
+// random per-pack bonus Habitat card (draft/pool.ts's drawBonusHabitat,
+// still unchanged and still fires) as the only way to get a color into a
+// slot at all — that mechanic previously left the player with whatever 3
+// colors the RNG happened to hand them (a real, confirmed complaint: "i
+// didnt get to set my habitat to whatever i want i was stuck with 1 white
+// and 2 black"). Bonus-drafted Habitat cards are now purely optional
+// upside: still placeable via placeHabitatCard, either to fill a slot left
+// at Open Fort, or to grow an already-freely-chosen matching-color slot to
+// 2-star — see that function, unchanged below.
+//
+// Freely re-choosable (no cost, no card consumed) right up until the app
+// layer stops calling this (at "Continue to Tournament") — GDD §6.9's
+// "placement is permanent" still applies from that point on, same as
+// always, just enforced by the app no longer offering the choice UI rather
+// than by this function itself. Only blocked once a slot has actually been
+// grown to 2-star (via a real drafted card) — at that point its color is
+// genuinely locked in, matching the existing permanence rule.
+export function setHabitatChoice(
+  environment: Environment,
+  slotIndex: number,
+  color: StatColor | undefined,
+): Environment {
+  const existing = environment.slots[slotIndex];
+  if (existing !== undefined && existing.starLevel === 2) {
+    throw new Error(`setHabitatChoice: slot ${slotIndex} is already a 2-star Habitat, its color is locked`);
+  }
+  const nextSlot: HabitatSlot | undefined =
+    color === undefined ? undefined : { color, starLevel: 1, seedSlots: 1, plantedSeedColors: [] };
+  return { ...environment, slots: environment.slots.map((s, i) => (i === slotIndex ? nextSlot : s)) };
+}
+
 // True iff placing `unplacedHabitats[cardIndex]` into `slots[slotIndex]`
 // would succeed — either the slot is empty (Open Fort), or it already holds
 // a 1-star Habitat of the exact same color (combining into 2-star). Meant
@@ -219,35 +254,49 @@ export function triggerInitialFruitGain(environment: Environment): Environment {
   return { ...environment, fruit };
 }
 
-// Builds a { color: amount } charge map, collapsing correctly even in the
-// (practically nonexistent, but type-legal — CardBase.color is StatColor |
-// 'colorless') case where a card's own color IS 'colorless': both the base
-// cost and any splash tax then draw from the exact same bucket, added
-// together, rather than one silently overwriting the other.
-function buildCharges(color: StatColor | 'colorless', baseCost: number, tax: number): Partial<FruitPool> {
-  const charges: Partial<FruitPool> = {};
-  charges[color] = (charges[color] ?? 0) + baseCost;
-  charges.colorless = (charges.colorless ?? 0) + tax;
-  return charges;
-}
-
-function tryChargeFruit(
+// Charges a base cost (in the card's own color) plus an optional splash tax
+// (always colorless). Fixed 2026-08-21 — a real bug in the first draft of
+// this system, caught by the user hitting it directly: the base cost used to
+// require the FULL amount from the card's exact color bucket, with no
+// fallback. With only 3 Habitat slots and 5 colors, at least 2 colors are
+// *always* stuck at 0 native Fruit forever — under the old rule, any card of
+// those colors (including a 3-copy Awakening) was PERMANENTLY unusable, no
+// matter how much Wildcard Fruit was banked. That directly contradicts the
+// GDD's own established rule that "a Wildcard Fruit spends as any color"
+// (§6.9, Open Fort) — splash tax already honored that; the base cost didn't.
+// Now: the card's own color is drawn down first, and colorless covers
+// whatever's left short (in addition to covering splash tax, if any) — so
+// colorless Fruit is what actually keeps every color usable, exactly as
+// intended, rather than a color you never funded being dead forever.
+function chargeFruit(
   fruit: FruitPool,
-  charges: Partial<FruitPool>,
-): { ok: true; fruit: FruitPool } | { ok: false } {
-  const entries = Object.entries(charges) as [keyof FruitPool, number][];
-  const canAfford = entries.every(([color, amount]) => fruit[color] >= amount);
-  if (!canAfford) return { ok: false };
-  const next = { ...fruit };
-  for (const [color, amount] of entries) next[color] -= amount;
-  return { ok: true, fruit: next };
+  color: StatColor | 'colorless',
+  baseCost: number,
+  tax: number,
+): { ok: true; fruit: FruitPool; baseCostFromColorless: number } | { ok: false } {
+  if (color === 'colorless') {
+    const need = baseCost + tax;
+    if (fruit.colorless < need) return { ok: false };
+    return { ok: true, fruit: { ...fruit, colorless: fruit.colorless - need }, baseCostFromColorless: 0 };
+  }
+  const ownHave = fruit[color];
+  const fromOwn = Math.min(baseCost, ownHave);
+  const shortfall = baseCost - fromOwn;
+  const colorlessNeeded = shortfall + tax;
+  if (fruit.colorless < colorlessNeeded) return { ok: false };
+  return {
+    ok: true,
+    fruit: { ...fruit, [color]: ownHave - fromOwn, colorless: fruit.colorless - colorlessNeeded },
+    baseCostFromColorless: shortfall,
+  };
 }
 
 export interface SplashBondResult extends BondResult {
   environment: Environment;
   ok: boolean; // false = insufficient Fruit; chao/environment are returned unchanged
-  baseCostPaid: number;
-  taxPaid: number;
+  baseCostPaid: number; // total base cost (own-color + any colorless covering a shortfall)
+  baseCostFromColorless: number; // the portion of baseCostPaid that came from colorless, if the own color fell short
+  taxPaid: number; // splash tax specifically — always colorless
 }
 
 // Bonds a Bond Card, now paying TWO things (playtest-prep, revised
@@ -268,9 +317,9 @@ export function bondCardWithSplashTax(
 ): SplashBondResult {
   const baseCost = FRUIT_COST_BY_RARITY[card.rarity];
   const tax = computeSplashTax(chao, card, baseTax);
-  const charge = tryChargeFruit(environment.fruit, buildCharges(card.color, baseCost, tax));
+  const charge = chargeFruit(environment.fruit, card.color, baseCost, tax);
   if (!charge.ok) {
-    return { chao, environment, events: [], ok: false, baseCostPaid: 0, taxPaid: 0 };
+    return { chao, environment, events: [], ok: false, baseCostPaid: 0, baseCostFromColorless: 0, taxPaid: 0 };
   }
   const { chao: bonded, events } = bondCard(chao, card, rng);
   return {
@@ -279,6 +328,7 @@ export function bondCardWithSplashTax(
     events,
     ok: true,
     baseCostPaid: baseCost,
+    baseCostFromColorless: charge.baseCostFromColorless,
     taxPaid: tax,
   };
 }
@@ -289,6 +339,7 @@ export interface AwakenCostResult {
   events: SimEvent[];
   ok: boolean;
   baseCostPaid: number;
+  baseCostFromColorless: number;
   taxPaid: number;
 }
 
@@ -303,9 +354,9 @@ export function awakenBondCardWithCost(
 ): AwakenCostResult {
   const baseCost = FRUIT_COST_BY_RARITY[card.rarity] * AWAKEN_COST_MULTIPLIER;
   const tax = computeSplashTax(chao, card, baseTax);
-  const charge = tryChargeFruit(environment.fruit, buildCharges(card.color, baseCost, tax));
+  const charge = chargeFruit(environment.fruit, card.color, baseCost, tax);
   if (!charge.ok) {
-    return { chao, environment, events: [], ok: false, baseCostPaid: 0, taxPaid: 0 };
+    return { chao, environment, events: [], ok: false, baseCostPaid: 0, baseCostFromColorless: 0, taxPaid: 0 };
   }
   const { chao: awakened, events } = awakenBondCard(chao, card);
   return {
@@ -314,6 +365,7 @@ export function awakenBondCardWithCost(
     events,
     ok: true,
     baseCostPaid: baseCost,
+    baseCostFromColorless: charge.baseCostFromColorless,
     taxPaid: tax,
   };
 }
@@ -324,13 +376,15 @@ export interface PotionCostResult {
   events: SimEvent[];
   ok: boolean;
   costPaid: number;
+  costFromColorless: number;
 }
 
 // Potions now cost Fruit too (playtest-prep, 2026-08-21) — base cost only,
-// in the card's own color. No splash-tax layer: a consumed Potion never
-// interacts with color identity at all (GDD §3.3/§4.2 — it isn't "attached"
-// the way a Bond/Trait card is), so there's nothing to charge an off-color
-// surcharge against.
+// in the card's own color (falling back to colorless for any shortfall,
+// same as bondCardWithSplashTax/awakenBondCardWithCost). No splash-tax
+// layer: a consumed Potion never interacts with color identity at all
+// (GDD §3.3/§4.2 — it isn't "attached" the way a Bond/Trait card is), so
+// there's nothing to charge an off-color surcharge against.
 export function consumePotionWithCost(
   chao: Chao,
   environment: Environment,
@@ -338,10 +392,17 @@ export function consumePotionWithCost(
   rng: Rng,
 ): PotionCostResult {
   const cost = FRUIT_COST_BY_RARITY[card.rarity];
-  const charge = tryChargeFruit(environment.fruit, { [card.color]: cost });
+  const charge = chargeFruit(environment.fruit, card.color, cost, 0);
   if (!charge.ok) {
-    return { chao, environment, events: [], ok: false, costPaid: 0 };
+    return { chao, environment, events: [], ok: false, costPaid: 0, costFromColorless: 0 };
   }
   const { chao: fed, events } = consumePotion(chao, card, rng);
-  return { chao: fed, environment: { ...environment, fruit: charge.fruit }, events, ok: true, costPaid: cost };
+  return {
+    chao: fed,
+    environment: { ...environment, fruit: charge.fruit },
+    events,
+    ok: true,
+    costPaid: cost,
+    costFromColorless: charge.baseCostFromColorless,
+  };
 }

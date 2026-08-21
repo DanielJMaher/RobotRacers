@@ -11,6 +11,7 @@ import type {
   PotionCard,
   RaceResult,
   SeedCard,
+  StatColor,
   TechniqueCard,
   TournamentState,
 } from '@chao-draft/sim';
@@ -39,6 +40,7 @@ import {
   plantSeed as plantSeedOnEnvironment,
   prepareNextTournament,
   runFinalRace,
+  setHabitatChoice as setHabitatChoiceOnEnvironment,
   startRound,
   triggerFruitGain,
   triggerInitialFruitGain,
@@ -98,23 +100,33 @@ export type Phase = 'draft' | 'habitat_placement' | 'tournament' | 'interlude' |
 // to be a cost benefit struggle"). Previously an on-color bond was
 // completely free — only reaching off-identity ever cost anything, which is
 // exactly why there was no real economic tension to using an entire drafted
-// pool. Builds a clear "needs X, have Y" message covering both possible
-// shortfalls (the base cost in the card's own color, and/or the off-color
-// splash tax in Wildcard/colorless Fruit) rather than a single generic
-// failure line.
-function describeFruitShortfall(
-  environment: Environment,
-  color: BondCard['color'],
-  baseCost: number,
-  tax: number,
-): string {
+// pool. The card's own color is drawn down first; Wildcard/colorless Fruit
+// covers whatever's left short — for BOTH the base cost and any off-color
+// splash tax — matching the GDD's own "Wildcard Fruit spends as any color"
+// rule (§6.9). Fixed 2026-08-21: the base cost used to require the full
+// amount from the card's exact color with no fallback, which meant any
+// color a player's 3 Habitat slots didn't happen to cover (structurally
+// at least 2 of the 5 colors, always) was permanently unusable no matter
+// how much Wildcard Fruit was banked — a real bug the user hit directly
+// (Awakening "not working" was this, not a separate issue).
+function describeFruitShortfall(environment: Environment, color: BondCard['color'], baseCost: number, tax: number): string {
+  const need = baseCost + tax;
+  const have = environment.fruit[color] + environment.fruit.colorless;
+  const taxNote = tax > 0 ? ` (${baseCost} base + ${tax} off-color splash tax)` : '';
+  return `${need} Fruit total${taxNote} — have ${environment.fruit[color]} ${color} + ${environment.fruit.colorless} Wildcard (${have} combined)`;
+}
+
+// Builds an accurate "(paid ...)" log note reflecting exactly which bucket
+// funded what — since colorless can now cover part of the base cost too,
+// not just splash tax, a flat "(paid N {color} Fruit)" would be wrong
+// whenever the own color fell short and colorless picked up the difference.
+function formatCostNote(color: string, baseCostPaid: number, baseCostFromColorless: number, taxPaid: number): string {
+  const ownColorPortion = baseCostPaid - baseCostFromColorless;
   const parts: string[] = [];
-  const haveOwn = environment.fruit[color];
-  if (haveOwn < baseCost) parts.push(`${baseCost} ${color} Fruit (have ${haveOwn})`);
-  if (tax > 0 && environment.fruit.colorless < tax) {
-    parts.push(`${tax} Wildcard Fruit for the off-color splash tax (have ${environment.fruit.colorless})`);
-  }
-  return parts.join(' and ');
+  if (ownColorPortion > 0) parts.push(`${ownColorPortion} ${color} Fruit`);
+  if (baseCostFromColorless > 0) parts.push(`${baseCostFromColorless} Wildcard Fruit (covering a ${color} shortfall)`);
+  if (taxPaid > 0) parts.push(`${taxPaid} Wildcard splash tax`);
+  return ` (paid ${parts.join(' + ')})`;
 }
 
 // Orchestrates one session: draft → place drawn Habitat cards (roadmap.md
@@ -264,6 +276,21 @@ export function useGame() {
     [environment, appendLog],
   );
 
+  // Free habitat choice (playtest-prep, added 2026-08-21, per the user's
+  // direct request: "It is an open selection - I can choose any habitat for
+  // any of the slots") — the primary way to set a slot's color now, in
+  // place of the Draft Booster's random per-pack bonus Habitat card (which
+  // previously left the player stuck with whatever 3 colors the RNG handed
+  // them). `undefined` clears a slot back to Open Fort. Freely re-choosable
+  // up until "Continue to Tournament" — see setHabitatChoice's own comment.
+  const chooseHabitat = useCallback(
+    (slotIndex: number, color: StatColor | undefined) => {
+      if (!environment) return;
+      setEnvironment(setHabitatChoiceOnEnvironment(environment, slotIndex, color));
+    },
+    [environment],
+  );
+
   const continueToTournament = useCallback(() => {
     if (!environment) return;
     // Tournament-start Fruit trigger (GDD §6.9) — fires now, once Habitat
@@ -309,10 +336,7 @@ export function useGame() {
       // always adds, never replaces, so the log just names the touched
       // regions rather than talking about a slot being occupied/replaced.
       const regions = Object.keys(card.bodyMutations).join(', ');
-      const costNote =
-        result.taxPaid > 0
-          ? ` (paid ${result.baseCostPaid} ${card.color} Fruit + ${result.taxPaid} Wildcard splash tax)`
-          : ` (paid ${result.baseCostPaid} ${card.color} Fruit)`;
+      const costNote = formatCostNote(card.color, result.baseCostPaid, result.baseCostFromColorless, result.taxPaid);
       appendLog([`${card.name} bonds onto ${regions}${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
     },
     [tournament, environment, appendLog],
@@ -348,10 +372,7 @@ export function useGame() {
         return next;
       });
       const regions = Object.keys(card.bodyMutations).join(', ');
-      const costNote =
-        result.taxPaid > 0
-          ? ` (paid ${result.baseCostPaid} ${card.color} Fruit + ${result.taxPaid} Wildcard splash tax)`
-          : ` (paid ${result.baseCostPaid} ${card.color} Fruit)`;
+      const costNote = formatCostNote(card.color, result.baseCostPaid, result.baseCostFromColorless, result.taxPaid);
       appendLog([
         `★ ${card.name} Awakened!${costNote} 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
         ...result.events.map((e) => narrateSimEvent(e)),
@@ -386,10 +407,8 @@ export function useGame() {
       // Potions are one-time use, same as Bond Cards (roadmap.md Phase 5.5) —
       // this specific drafted copy is spent the moment it's consumed.
       setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
-      appendLog([
-        `${card.name} is consumed (paid ${result.costPaid} ${card.color} Fruit) — spent.`,
-        ...result.events.map((e) => narrateSimEvent(e)),
-      ]);
+      const costNote = formatCostNote(card.color, result.costPaid, result.costFromColorless, 0);
+      appendLog([`${card.name} is consumed${costNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
     },
     [tournament, environment, appendLog],
   );
@@ -613,6 +632,7 @@ export function useGame() {
     log,
     pickCard,
     placeHabitatCard,
+    chooseHabitat,
     continueToTournament,
     bondBondCard,
     awakenBondCard,

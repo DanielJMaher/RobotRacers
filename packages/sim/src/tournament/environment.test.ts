@@ -15,6 +15,7 @@ import {
   type Environment,
   placeHabitatCard,
   plantSeed,
+  setHabitatChoice,
   triggerFruitGain,
   triggerInitialFruitGain,
 } from './environment';
@@ -103,6 +104,43 @@ describe('plantSeed', () => {
   it('throws for an out-of-range Seed index', () => {
     const env = placeHabitatCard(createEnvironment([sunlitMeadow]), 0, 0);
     expect(() => plantSeed(env, 5, 0)).toThrow();
+  });
+});
+
+describe('setHabitatChoice', () => {
+  it('freely sets a slot to any color as a 1-star Habitat, no card needed', () => {
+    const env = setHabitatChoice(createEnvironment([]), 0, 'blue');
+    expect(env.slots[0]).toEqual({ color: 'blue', starLevel: 1, seedSlots: 1, plantedSeedColors: [] });
+  });
+
+  it('freely re-chooses a different color (no cost, no card consumed)', () => {
+    const first = setHabitatChoice(createEnvironment([]), 0, 'blue');
+    const changed = setHabitatChoice(first, 0, 'red');
+    expect(changed.slots[0]).toEqual({ color: 'red', starLevel: 1, seedSlots: 1, plantedSeedColors: [] });
+  });
+
+  it('clears a slot back to Open Fort by choosing undefined', () => {
+    const chosen = setHabitatChoice(createEnvironment([]), 0, 'blue');
+    const cleared = setHabitatChoice(chosen, 0, undefined);
+    expect(cleared.slots[0]).toBeUndefined();
+  });
+
+  it('throws if the slot has already been grown to 2-star (its color is locked)', () => {
+    const combined = placeHabitatCard(
+      placeHabitatCard(createEnvironment([sunlitMeadow, sunlitMeadow]), 0, 0),
+      0,
+      0,
+    );
+    expect(combined.slots[0]?.starLevel).toBe(2);
+    expect(() => setHabitatChoice(combined, 0, 'red')).toThrow();
+  });
+
+  it('a drafted Habitat card can still fill/grow a freely-chosen slot afterward', () => {
+    // Free choice picks green for slot 0, matching sunlitMeadow -- a later
+    // drafted card of that color should still be able to grow it to 2-star.
+    const chosen = setHabitatChoice(createEnvironment([sunlitMeadow]), 0, 'green');
+    const grown = placeHabitatCard(chosen, 0, 0);
+    expect(grown.slots[0]).toEqual({ color: 'green', starLevel: 2, seedSlots: 2, plantedSeedColors: [] });
   });
 });
 
@@ -229,6 +267,28 @@ describe('bondCardWithSplashTax', () => {
     expect(result.environment.fruit).toEqual({ ...EMPTY_FRUIT, red: 0, colorless: 0 });
     expect(result.chao.colorIdentity).toEqual(['green', 'red']);
   });
+
+  // Regression test for a real bug the user hit directly: with only 3
+  // Habitat slots and 5 colors, at least 2 colors are ALWAYS stuck at 0
+  // native Fruit — the base cost used to require the FULL amount from the
+  // card's own color with no fallback, which meant those colors' cards
+  // (including Awakening) were permanently unusable no matter how much
+  // Wildcard Fruit was banked. Fixed 2026-08-21: colorless now covers any
+  // own-color shortfall too, matching the GDD's own "Wildcard Fruit spends
+  // as any color" rule (§6.9) that splash tax already honored.
+  it('lets colorless Fruit cover a shortfall in the base cost itself, not just splash tax', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const rng = createRng(4);
+    // 0 green Fruit at all -- would have been permanently blocked under the
+    // old rule -- but 1 colorless covers brambleHare's entire base cost (1).
+    const env = withFruit(createEnvironment([]), { colorless: 1 });
+    const result = bondCardWithSplashTax(chao, env, brambleHare, 3, rng); // green, on-color (empty identity)
+
+    expect(result.ok).toBe(true);
+    expect(result.baseCostPaid).toBe(1);
+    expect(result.baseCostFromColorless).toBe(1);
+    expect(result.environment.fruit).toEqual({ ...EMPTY_FRUIT, colorless: 0 });
+  });
 });
 
 describe('awakenBondCardWithCost', () => {
@@ -245,14 +305,30 @@ describe('awakenBondCardWithCost', () => {
     expect(result.chao.bondedCards[0]?.awakened).toBe(true);
   });
 
-  it('blocks when 3x the base cost is not available', () => {
+  it('blocks when 3x the base cost is not available even combining own color and colorless', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
-    const env = withFruit(createEnvironment([]), { green: 2 }); // needs 3
+    const env = withFruit(createEnvironment([]), { green: 2 }); // needs 3, 0 colorless to cover the gap
     const result = awakenBondCardWithCost(chao, env, brambleHare, 3);
 
     expect(result.ok).toBe(false);
     expect(result.environment).toBe(env);
     expect(result.chao).toBe(chao);
+  });
+
+  // Regression test: this is the exact shape of the user's real report —
+  // 0 native Fruit in the card's color (their habitats didn't cover it),
+  // Awakening a 3-copy stack should still work using only Wildcard Fruit.
+  it('lets colorless Fruit alone cover the entire 3x cost when the native color is 0', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const env = withFruit(createEnvironment([]), { colorless: 3 }); // 0 green, 3 colorless
+    const result = awakenBondCardWithCost(chao, env, brambleHare, 3);
+
+    expect(result.ok).toBe(true);
+    expect(result.baseCostPaid).toBe(3);
+    expect(result.baseCostFromColorless).toBe(3);
+    expect(result.chao.bondedCards).toHaveLength(1);
+    expect(result.chao.bondedCards[0]?.awakened).toBe(true);
+    expect(result.environment.fruit).toEqual({ ...EMPTY_FRUIT, colorless: 0 });
   });
 });
 

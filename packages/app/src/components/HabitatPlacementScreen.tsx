@@ -1,13 +1,23 @@
+import type { StatColor } from '@chao-draft/sim';
 import { canPlaceHabitatCard, type Environment } from '@chao-draft/sim';
 import { CardBadge } from './CardBadge';
 
 interface HabitatPlacementScreenProps {
   environment: Environment;
+  onChoose: (slotIndex: number, color: StatColor | undefined) => void;
   onPlace: (cardIndex: number, slotIndex: number) => void;
   onContinue: () => void;
 }
 
-export function HabitatPlacementScreen({ environment, onPlace, onContinue }: HabitatPlacementScreenProps) {
+const COLOR_CHOICES: { color: StatColor; label: string }[] = [
+  { color: 'green', label: '🟢 Green' },
+  { color: 'red', label: '🔴 Red' },
+  { color: 'black', label: '⚫ Black' },
+  { color: 'blue', label: '🔵 Blue' },
+  { color: 'white', label: '⚪ White' },
+];
+
+export function HabitatPlacementScreen({ environment, onChoose, onPlace, onContinue }: HabitatPlacementScreenProps) {
   // Guard against skipping past a still-placeable Habitat card (playtest-prep
   // fix, 2026-08-21): "Continue to Tournament" used to always be enabled, so
   // clicking past this screen with cards still in hand silently discarded
@@ -25,45 +35,82 @@ export function HabitatPlacementScreen({ environment, onPlace, onContinue }: Hab
 
   return (
     <section>
-      <h2>Place Your Habitat Cards</h2>
+      <h2>Choose Your Habitats</h2>
       <p>
-        Placement is permanent — a filled slot can only be grown (combine a 2nd same-color card into a
-        2-star Habitat), never swapped. Leaving a slot empty is a real strategy ("Open Fort"): it
-        produces 1 colorless Wildcard Fruit per trigger instead of sitting inert.
+        Pick a color (or Open Fort) for each of your 3 Environment slots — freely, any color, any slot,
+        no draft required. Freely re-pickable until you continue; once the Tournament begins, a slot's
+        color locks in for good (it can still be grown to 2-star with a matching drafted Habitat card
+        below, never swapped to a different color). Open Fort produces 1 colorless Wildcard Fruit per
+        trigger instead of sitting inert — a real, deliberate strategy, not a placeholder.
       </p>
 
       <h3>Environment Slots</h3>
       <ul className="standings-list">
-        {environment.slots.map((slot, slotIndex) => (
-          <li key={slotIndex}>
-            <span>
-              Slot {slotIndex + 1}:{' '}
-              {slot ? `${slot.color} (${slot.starLevel}-star, ${slot.seedSlots} Seed slot(s))` : 'Open Fort (empty)'}
-            </span>
-          </li>
-        ))}
+        {environment.slots.map((slot, slotIndex) => {
+          const locked = slot?.starLevel === 2;
+          return (
+            <li key={slotIndex}>
+              <span>
+                Slot {slotIndex + 1}:{' '}
+                {slot ? `${slot.color} (${slot.starLevel}-star, ${slot.seedSlots} Seed slot(s))` : 'Open Fort'}
+                {locked ? ' — locked in (2-star)' : ''}
+              </span>
+              <span className="scouting-icons">
+                {COLOR_CHOICES.map(({ color, label }) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="slot-assign-btn"
+                    disabled={locked}
+                    aria-pressed={slot?.color === color}
+                    onClick={() => onChoose(slotIndex, color)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="slot-assign-btn"
+                  disabled={locked}
+                  aria-pressed={slot === undefined}
+                  onClick={() => onChoose(slotIndex, undefined)}
+                >
+                  Open Fort
+                </button>
+              </span>
+            </li>
+          );
+        })}
       </ul>
 
-      <h3>Drawn Habitat Cards ({environment.unplacedHabitats.length})</h3>
-      <div className="card-grid">
-        {environment.unplacedHabitats.map((card, cardIndex) => (
-          <div key={`${card.id}-${cardIndex}`}>
-            <CardBadge card={card} />
-            <div className="event-buttons">
-              {environment.slots.map((_, slotIndex) => (
-                <button
-                  key={slotIndex}
-                  type="button"
-                  disabled={!canPlaceHabitatCard(environment, cardIndex, slotIndex)}
-                  onClick={() => onPlace(cardIndex, slotIndex)}
-                >
-                  Place in Slot {slotIndex + 1}
-                </button>
-              ))}
-            </div>
+      {environment.unplacedHabitats.length > 0 && (
+        <>
+          <h3>Drawn Habitat Cards ({environment.unplacedHabitats.length})</h3>
+          <p className="hint-text">
+            A bonus card from your draft — place it to fill an Open Fort slot, or grow an already-chosen
+            matching-color slot to 2-star (+1 base Fruit, +1 Seed slot).
+          </p>
+          <div className="card-grid">
+            {environment.unplacedHabitats.map((card, cardIndex) => (
+              <div key={`${card.id}-${cardIndex}`}>
+                <CardBadge card={card} />
+                <div className="event-buttons">
+                  {environment.slots.map((_, slotIndex) => (
+                    <button
+                      key={slotIndex}
+                      type="button"
+                      disabled={!canPlaceHabitatCard(environment, cardIndex, slotIndex)}
+                      onClick={() => onPlace(cardIndex, slotIndex)}
+                    >
+                      Place in Slot {slotIndex + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       {hasPlaceableCard && (
         <p className="hint-text">

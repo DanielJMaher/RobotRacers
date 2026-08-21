@@ -47,6 +47,7 @@ export function App() {
           {game.phase === 'habitat_placement' && game.environment && (
             <HabitatPlacementScreen
               environment={game.environment}
+              onChoose={game.chooseHabitat}
               onPlace={game.placeHabitatCard}
               onContinue={game.continueToTournament}
             />
