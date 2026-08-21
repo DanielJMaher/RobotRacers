@@ -6,6 +6,7 @@ interface TournamentPanelProps {
   loadedTechniqueCount: number;
   onRunNextRace: () => void;
   onRunFinalRace: () => void;
+  onRestart: () => void;
 }
 
 const SCOUTING_ORDER: { key: keyof ScoutingRead; label: string }[] = [
@@ -74,6 +75,7 @@ export function TournamentPanel({
   loadedTechniqueCount,
   onRunNextRace,
   onRunFinalRace,
+  onRestart,
 }: TournamentPanelProps) {
   const allEntrants = Object.values(tournament.entrants).sort((a, b) =>
     a.chao.name.localeCompare(b.chao.name),
@@ -123,7 +125,12 @@ export function TournamentPanel({
       )}
 
       {tournament.phase === 'eliminated' && (
-        <p>Your Chao was eliminated. No breeding pick this generation — the run is over.</p>
+        <div className="run-over-banner">
+          <p>Your Chao was eliminated. No breeding pick this generation — the run is over.</p>
+          <button type="button" onClick={onRestart}>
+            Start New Tournament
+          </button>
+        </div>
       )}
 
       <h4>All Entrants ({allEntrants.length})</h4>

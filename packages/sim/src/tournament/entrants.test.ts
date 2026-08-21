@@ -18,12 +18,19 @@ describe('generateEntrant', () => {
   it('rolls leg-relevant stats within range and leaves bonded cards/traits/items empty', () => {
     const chao = generateEntrant('e1', 'Test Entrant', 1, createRng(5));
 
-    for (const stat of ['swim', 'fly', 'run', 'power', 'climb', 'jump'] as const) {
+    for (const stat of ['swim', 'fly', 'run', 'power'] as const) {
       expect(chao.stats[stat]).toBeGreaterThanOrEqual(10);
-      expect(chao.stats[stat]).toBeLessThanOrEqual(60);
+      expect(chao.stats[stat]).toBeLessThanOrEqual(40);
     }
-    expect(chao.stats.stamina).toBeGreaterThanOrEqual(60);
-    expect(chao.stats.stamina).toBeLessThanOrEqual(150);
+    // Rebalanced 2026-08-21 (playtest-prep) — climb/jump get their own, much
+    // lower range since the card pool can't support the general 10-40 range
+    // for them (see entrants.ts's own comment).
+    for (const stat of ['climb', 'jump'] as const) {
+      expect(chao.stats[stat]).toBeGreaterThanOrEqual(0);
+      expect(chao.stats[stat]).toBeLessThanOrEqual(15);
+    }
+    expect(chao.stats.stamina).toBeGreaterThanOrEqual(40);
+    expect(chao.stats.stamina).toBeLessThanOrEqual(90);
     expect(chao.bondedCards).toEqual([]);
     expect(chao.traits).toEqual([]);
     expect(chao.items).toEqual([]);

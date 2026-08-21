@@ -11,14 +11,27 @@ import { createChao } from '../chao/factory';
 // the GDD as a deferred upgrade, not built here.
 
 const LEG_RELEVANT_STATS: readonly Stat[] = ['swim', 'fly', 'run', 'power', 'climb', 'jump'];
+const CLIMB_JUMP_STATS: readonly Stat[] = ['climb', 'jump'];
 
-// Placeholder ranges, not playtested — chosen so a generated entrant's Leg
-// checks (difficulty 15-30, GDD §5.1) land in a plausible pass/fail mix
-// against these stats plus the resolver's own +/-5 variance.
+// Rebalanced 2026-08-21 (playtest-prep branch) — an Opus review pass caught
+// that these original ranges made a freshly-drafted player structurally
+// unable to compete: swim/fly/run/power/stamina each have ~200 total average
+// card value spread across ~17 cards in the set, so a focused draft can
+// realistically reach these numbers, but climb/jump have only 3 cards each
+// (~28 total average value combined) — no rare or legendary climb/jump card
+// exists at all. Rolling climb/jump in the same 10-60 range as the
+// well-carded stats meant NPCs got a free, uncontestable edge on ~28% of all
+// Legs (climb+jump legs) no player draft could ever close. Split into two
+// ranges: the well-carded stats keep a real (if gentler) challenge, while
+// climb/jump are rolled low enough to match what the card pool can actually
+// support — still a placeholder, not a final balance pass, but no longer
+// structurally unwinnable. See roadmap.md's Phase 6 balance-pass note.
 const STAT_MIN = 10;
-const STAT_MAX = 60;
-const STAMINA_MIN = 60;
-const STAMINA_MAX = 150;
+const STAT_MAX = 40;
+const CLIMB_JUMP_MIN = 0;
+const CLIMB_JUMP_MAX = 15;
+const STAMINA_MIN = 40;
+const STAMINA_MAX = 90;
 
 // A modest curated name pool so generated entrants read as individuals in
 // the bracket/standings UI rather than "Entrant #7" — flavor only, no
@@ -48,7 +61,10 @@ export function generateEntrant(id: string, name: string, bornGeneration: number
   const chao = createChao({ id, name, bornGeneration });
   const stats = { ...chao.stats };
   for (const stat of LEG_RELEVANT_STATS) {
-    stats[stat] = rollInRange(rng, STAT_MIN, STAT_MAX);
+    const [min, max] = CLIMB_JUMP_STATS.includes(stat)
+      ? [CLIMB_JUMP_MIN, CLIMB_JUMP_MAX]
+      : [STAT_MIN, STAT_MAX];
+    stats[stat] = rollInRange(rng, min, max);
   }
   stats.stamina = rollInRange(rng, STAMINA_MIN, STAMINA_MAX);
   return { ...chao, stats };

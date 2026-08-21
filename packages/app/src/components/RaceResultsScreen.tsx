@@ -38,7 +38,16 @@ export function RaceResultsScreen({ result, onContinue }: RaceResultsScreenProps
                   {entry.name}
                   {entry.eliminated ? ' (eliminated)' : ''}
                 </td>
-                <td>{formatSeconds(entry.timing.totalSeconds)}</td>
+                <td>
+                  {/* A DNF's total only covers legs actually attempted — never a
+                      real finishing time, so it's never shown as if it were one
+                      (a DNF can otherwise look "faster" than the winner). */}
+                  {entry.dnf ? (
+                    <span className="dnf-label">DNF ({formatSeconds(entry.timing.totalSeconds)} before stopping)</span>
+                  ) : (
+                    formatSeconds(entry.timing.totalSeconds)
+                  )}
+                </td>
                 <td>
                   {entry.timing.legs.map((leg, legIndex) => (
                     <span key={legIndex} className={leg.success ? undefined : 'leg-fumbled'}>

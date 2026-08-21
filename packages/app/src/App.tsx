@@ -15,7 +15,15 @@ export function App() {
 
   return (
     <main className="app">
-      <h1>Chao Draft</h1>
+      <div className="app-header-row">
+        <h1>Chao Draft</h1>
+        {/* Always-available restart (playtest-prep fix, 2026-08-21) — there
+            was previously no way to start over short of refreshing the page,
+            which loses everything since there's no save/load yet. */}
+        <button type="button" className="restart-button" onClick={game.restartGame}>
+          Restart
+        </button>
+      </div>
       <p className="subtitle">
         Draft cards, bond them onto your Chao, then compete in the Tournament. See{' '}
         <code>docs/03-roadmap/roadmap.md</code> for scope.
@@ -68,6 +76,8 @@ export function App() {
                 pool={game.playerPool}
                 usedPoolIndices={game.usedPoolIndices}
                 selectedTechniqueIds={game.selectedTechniqueIds}
+                actionMessage={game.actionMessage}
+                onDismissActionMessage={game.dismissActionMessage}
                 onBondCard={game.bondBondCard}
                 onAwakenBondCard={game.awakenBondCard}
                 onConsumePotion={game.consumePotionCard}
@@ -79,6 +89,7 @@ export function App() {
                 loadedTechniqueCount={game.selectedTechniqueIds.size}
                 onRunNextRace={game.runNextGroupRace}
                 onRunFinalRace={game.runFinalRace}
+                onRestart={game.restartGame}
               />
               <EventLogPanel log={game.log} />
             </div>

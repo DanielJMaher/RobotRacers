@@ -47,6 +47,13 @@ export interface RaceResultEntry {
   chaoId: string;
   name: string;
   eliminated: boolean;
+  // A DNF's totalSeconds only covers the legs it actually attempted before
+  // running out of Stamina — never comparable to a finisher's total time
+  // (an early DNF can look "faster" than the winner). Surfaced separately
+  // so the UI never presents a DNF's partial time as if it were a real
+  // result (playtest-prep fix, 2026-08-21 — caught by review before a live
+  // playtest: the Results table had no DNF indicator at all).
+  dnf: boolean;
   timing: ReturnType<typeof computeRaceTiming>;
 }
 
@@ -67,6 +74,7 @@ function buildRaceResultEntries(
       chaoId,
       name: nameById[chaoId] ?? chaoId,
       eliminated: chaoId === eliminatedChaoId,
+      dnf: !result.finished,
       timing: computeRaceTiming(result.finalChao, result.events),
     };
   });
@@ -125,6 +133,13 @@ export function useGame() {
   const [selectedTechniqueIds, setSelectedTechniqueIds] = useState<Set<string>>(new Set());
   const [raceResult, setRaceResult] = useState<PendingRaceResult | null>(null);
   const [log, setLog] = useState<string[]>([]);
+  // A blocked bond (insufficient Fruit for splash tax) previously only ever
+  // showed up as a line in the scrolling Event Log, which sits well below
+  // the fold under the card grids — playtest-prep fix, 2026-08-21, caught by
+  // review before a live playtest: clicking a card that can't be afforded
+  // looked exactly like clicking nothing at all. Surfaced right above the
+  // Bond Cards grid instead; cleared on the next successful bond.
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const appendLog = useCallback((lines: string[]) => {
     if (lines.length === 0) return;
@@ -236,12 +251,13 @@ export function useGame() {
 
       if (!result.ok) {
         const needed = computeSplashTax(playerChao, card, DEFAULT_SPLASH_TAX);
-        appendLog([
-          `Can't bond ${card.name} — needs ${needed} Fruit splash tax (off-color), you have ${environment.fruit}.`,
-        ]);
+        const message = `Can't bond ${card.name} — needs ${needed} Fruit splash tax (off-color), you have ${environment.fruit}.`;
+        setActionMessage(message);
+        appendLog([message]);
         return;
       }
 
+      setActionMessage(null);
       setTournament({
         ...tournament,
         entrants: {
@@ -458,6 +474,45 @@ export function useGame() {
     appendLog([`--- ${breedingSetup.playerBaby.name}'s Tournament begins! Draft a fresh pool. ---`]);
   }, [breedingSetup, appendLog]);
 
+  // Restart (playtest-prep fix, 2026-08-21): there was previously no way to
+  // start over short of refreshing the whole page (losing everything, since
+  // there's no save/load yet) — a real dead-end after an elimination, since
+  // `phase` stays 'tournament' and the Garden remains fully interactive
+  // (bonding onto a dead run) with no signal anything's actually over besides
+  // a log line. This is a full hard reset — a brand-new blank Chao and 23
+  // fresh procedural entrants, NOT a continuation via breeding (unlike
+  // startNextTournament, which this deliberately doesn't call into) — and a
+  // fresh Rng so the whole next run isn't a deterministic continuation of the
+  // old one's roll sequence either.
+  const restartGame = useCallback(() => {
+    rngRef.current = createRng(Date.now() ^ 0x9e3779b9);
+    setDraft(
+      createDraft(
+        { seed: 1, seatCount: SEAT_COUNT, playerSeatIndex: PLAYER_SEAT_INDEX },
+        CARD_POOL,
+        rngRef.current,
+      ),
+    );
+    setTournament(null);
+    setEnvironment(null);
+    setExtraPool([]);
+    setInterludeDraft(null);
+    setInterludeRound(null);
+    setBreedingSetup(null);
+    setPendingPlayerChao(null);
+    setPendingOthers(null);
+    setUsedPoolIndices(new Set());
+    setSelectedTechniqueIds(new Set());
+    setRaceResult(null);
+    setActionMessage(null);
+    setPhase('draft');
+    setLog(['--- New Tournament — draft a fresh pool. ---']);
+  }, []);
+
+  const dismissActionMessage = useCallback(() => {
+    setActionMessage(null);
+  }, []);
+
   const dismissRaceResult = useCallback(() => {
     setRaceResult(null);
   }, []);
@@ -478,6 +533,8 @@ export function useGame() {
     breedingSetup,
     raceResult,
     dismissRaceResult,
+    actionMessage,
+    dismissActionMessage,
     selectedTechniqueIds,
     log,
     pickCard,
@@ -493,5 +550,6 @@ export function useGame() {
     runFinalRace: runFinalRaceHandler,
     pickBreedingPartner,
     startNextTournament,
+    restartGame,
   };
 }

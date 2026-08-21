@@ -8,6 +8,21 @@ interface HabitatPlacementScreenProps {
 }
 
 export function HabitatPlacementScreen({ environment, onPlace, onContinue }: HabitatPlacementScreenProps) {
+  // Guard against skipping past a still-placeable Habitat card (playtest-prep
+  // fix, 2026-08-21): "Continue to Tournament" used to always be enabled, so
+  // clicking past this screen with cards still in hand silently discarded
+  // them for good (placement only happens here — there's no habitat-placement
+  // UI anywhere in the Tournament phase) and permanently starved every seed
+  // in `Environment.availableSeeds` of a slot to plant into (planting
+  // requires a filled slot). Only disable Continue while at least one
+  // unplaced card can still go SOMEWHERE — with only 5 Habitat cards total
+  // in the whole game (1 per color) and 3 slots, drafting 4+ distinct colors
+  // is possible, and any card that genuinely has nowhere left to go must not
+  // soft-lock this screen.
+  const hasPlaceableCard = environment.unplacedHabitats.some((_, cardIndex) =>
+    environment.slots.some((_, slotIndex) => canPlaceHabitatCard(environment, cardIndex, slotIndex)),
+  );
+
   return (
     <section>
       <h2>Place Your Habitat Cards</h2>
@@ -50,8 +65,14 @@ export function HabitatPlacementScreen({ environment, onPlace, onContinue }: Hab
         ))}
       </div>
 
+      {hasPlaceableCard && (
+        <p className="hint-text">
+          You still have a Habitat card that can be placed — place it (or accept losing it) before
+          continuing. Habitat cards are gone for good once you leave this screen.
+        </p>
+      )}
       <div className="event-buttons">
-        <button type="button" onClick={onContinue}>
+        <button type="button" onClick={onContinue} disabled={hasPlaceableCard}>
           Continue to Tournament
         </button>
       </div>

@@ -6,6 +6,8 @@ interface GardenScreenProps {
   pool: Card[];
   usedPoolIndices: Set<number>;
   selectedTechniqueIds: Set<string>;
+  actionMessage: string | null;
+  onDismissActionMessage: () => void;
   onBondCard: (card: BondCard, poolIndex: number) => void;
   onAwakenBondCard: (card: BondCard, poolIndices: [number, number, number]) => void;
   onConsumePotion: (card: PotionCard, poolIndex: number) => void;
@@ -35,6 +37,8 @@ export function GardenScreen({
   pool,
   usedPoolIndices,
   selectedTechniqueIds,
+  actionMessage,
+  onDismissActionMessage,
   onBondCard,
   onAwakenBondCard,
   onConsumePotion,
@@ -125,6 +129,18 @@ export function GardenScreen({
       </div>
 
       <div className="garden-column">
+        {/* Blocked-bond feedback (playtest-prep fix, 2026-08-21): previously
+            a blocked bond only ever logged a line in the Event Log, far below
+            the fold — clicking an unaffordable card looked identical to
+            clicking nothing. Shown right above the grid it applies to. */}
+        {actionMessage && (
+          <div className="action-message">
+            {actionMessage}
+            <button type="button" onClick={onDismissActionMessage} aria-label="Dismiss">
+              ×
+            </button>
+          </div>
+        )}
         <h3>Bond Cards ({unusedBondEntries.length})</h3>
         <p className="hint-text">Bonding is one-time use — a card is spent the moment you bond it.</p>
         <div className="card-grid">
