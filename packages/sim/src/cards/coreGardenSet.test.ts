@@ -13,7 +13,7 @@ describe('coreGardenSet', () => {
 
   it('every StatGrant has min <= max', () => {
     for (const card of coreGardenSet) {
-      if (card.type === 'bond' || card.type === 'regimen') {
+      if (card.type === 'bond' || card.type === 'potion') {
         for (const grant of card.statGrants) {
           expect(grant.min, `${card.id} (${grant.stat})`).toBeLessThanOrEqual(grant.max);
         }

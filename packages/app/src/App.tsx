@@ -70,7 +70,7 @@ export function App() {
                 selectedTechniqueIds={game.selectedTechniqueIds}
                 onBondCard={game.bondBondCard}
                 onAwakenBondCard={game.awakenBondCard}
-                onConsumeRegimen={game.consumeRegimenCard}
+                onConsumePotion={game.consumePotionCard}
                 onToggleTechnique={game.toggleTechnique}
               />
               <EnvironmentPanel environment={game.environment} onPlantSeed={game.plantSeed} />

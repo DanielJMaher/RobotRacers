@@ -1,18 +1,21 @@
-import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../types';
+import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 
 // "Core Garden" example set — Blue (Fly) cards.
 // Source: docs/01-design/card-set-list.md
 //
-// Same `custom`-op convention as green.ts/red.ts/black.ts. A few cards here
-// hit a different kind of gap worth flagging individually: their card text
-// describes a DRAFT-time or meta-progression effect (peeking extra cards,
-// reincarnation math) that no current trigger/resolver models at all — see
-// the inline notes on Cloudsight Tonic and Tidewatcher's Eye.
+// Same `custom`-op convention as green.ts/red.ts/black.ts. Tidewatcher's Eye
+// hits a different kind of gap worth flagging individually: its card text
+// describes a DRAFT-time effect (peeking extra cards) that no current
+// trigger/resolver models at all — see its own inline note.
 //
 // Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
 // model: `slot` -> per-grant `region` (all Back here, unchanged name),
 // `bodyMutation: string` -> `bodyMutations: {region: string}`. Mechanical
 // schema migration only — see green.ts's header note for the full rationale.
+//
+// Potion cards (Windcatcher Draught, Cloudsight Tonic) moved out to
+// cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) — see that file's
+// own header note.
 
 export const dartingSparrow: BondCard = {
   id: 'bond.darting_sparrow',
@@ -52,30 +55,6 @@ export const paperKiteMoth: BondCard = {
   ],
   speciesTags: ['insect'],
   bodyMutations: { back: 'patterned_wings' },
-};
-
-export const windcatcherDraught: RegimenCard = {
-  id: 'regimen.windcatcher_draught',
-  name: 'Windcatcher Draught',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'blue',
-  statGrants: [{ stat: 'fly', min: 10, max: 14 }],
-};
-
-export const cloudsightTonic: RegimenCard = {
-  id: 'regimen.cloudsight_tonic',
-  name: 'Cloudsight Tonic',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'blue',
-  // card-set-list.md's flavor text also grants "draw an extra card at your
-  // next Draft Booster" — RegimenCard's schema is deliberately stat-grants-
-  // only (GDD §4.2: "no slot, no speciesTags, no bodyMutation... always
-  // safe to take"), so there's no field to attach a draft-time bonus to.
-  // Implemented as the stat grant alone; the draft bonus is dropped rather
-  // than bolted on awkwardly.
-  statGrants: [{ stat: 'fly', min: 4, max: 6 }],
 };
 
 export const feint: TechniqueCard = {
@@ -245,8 +224,6 @@ export const blueCards = [
   dartingSparrow,
   glassfinGuppy,
   paperKiteMoth,
-  windcatcherDraught,
-  cloudsightTonic,
   feint,
   hummingbirdDash,
   tidewatchersEye,

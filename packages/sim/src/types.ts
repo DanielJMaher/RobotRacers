@@ -30,7 +30,8 @@ export type SpeciesTag = 'rabbit' | 'bird' | 'fish' | 'reptile' | 'insect' | 'be
 export type Alignment = 'hero' | 'dark' | 'neutral';
 
 // 'seed' added 2026-08-20 (roadmap.md Phase 4, GDD §6.9's revived economy).
-export type CardType = 'bond' | 'regimen' | 'technique' | 'trait' | 'item' | 'habitat' | 'seed';
+// 'potion' renamed from 'regimen' 2026-08-20.
+export type CardType = 'bond' | 'potion' | 'technique' | 'trait' | 'item' | 'habitat' | 'seed';
 
 // ---------------------------------------------------------------------------
 // Effects (shared trigger/effect shape — architecture.md §5.3)
@@ -130,7 +131,7 @@ export interface StatGrant {
   // than a card's positives, an authoring rule, not a type-level constraint)
   max: number; // grade-roll ceiling — can also be negative, if min is too
   region?: BodyRegion; // which Body Region this grant is tagged to (GDD
-  // §3.5). Set on BondCard grants; omitted on RegimenCard grants, which
+  // §3.5). Set on BondCard grants; omitted on PotionCard grants, which
   // have no body/cosmetic effect at all (GDD §4.2 — "no slot... deliberately
   // 'just numbers'"). Optional rather than required because of that split.
 }
@@ -151,10 +152,21 @@ export interface BondCard extends CardBase {
   bodyMutations: Partial<Record<BodyRegion, string>>;
 }
 
-export interface RegimenCard extends CardBase {
-  type: 'regimen';
+// Renamed from RegimenCard 2026-08-20 — the "feed it fruit" side of the
+// original design (as opposed to Bond Cards' "feed it an animal"): a
+// permanent, one-time flat stat grant, deliberately "just numbers" — no
+// slot, no speciesTags, no bodyMutation, no color-identity/splash-tax
+// effect (GDD §3.3 — consumed, not attached).
+export interface PotionCard extends CardBase {
+  type: 'potion';
   statGrants: StatGrant[];
-  // no slot, no speciesTags, no bodyMutation — deliberately "just numbers"
+  // Blending (added 2026-08-20): a Potion can span up to 2 EXTRA colors
+  // beyond its primary `color`, for up to 3 total — omitted entirely for a
+  // mono Potion (the common case). Rarity gates how many, mirroring Bond
+  // Cards' own rarity-gated complexity (GDD §3.5): Common = mono only,
+  // Uncommon = mono or a 2-color blend, Rare = 2- or 3-color, Legendary =
+  // 3-color (the biggest splash). A working default, not deeply tuned.
+  secondaryColors?: StatColor[]; // 0-2 entries
 }
 
 export interface TechniqueCard extends CardBase {
@@ -209,7 +221,7 @@ export interface SeedCard extends CardBase {
 
 export type Card =
   | BondCard
-  | RegimenCard
+  | PotionCard
   | TechniqueCard
   | TraitCard
   | ItemCard

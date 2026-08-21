@@ -4,6 +4,8 @@ Purpose of this doc: prove the framework in [`game-design-document.md`](game-des
 
 Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list their slot (He=Head, Ba=Back, Ha=Hands, Fe=Feet) and Species Tag(s). Technique cards list Energy cost.
 
+**"Potion" cards below were renamed from "Regimen" 2026-08-20** (GDD §4.2, roadmap.md Phase 5.6) — same cards, same numbers, clearer name. That pass also added 10 new blended Potions (2–3 colors, rarity-gated) not yet reflected in this doc's per-color tables — see `packages/sim/src/cards/data/potions.ts` for the full current list.
+
 ## 🟢 Green — Stamina (Endurance / Growth / Sustain)
 
 | Name | Rarity | Type | Slot/Cost | Effect | Tags |
@@ -11,15 +13,15 @@ Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list th
 | Packleaf Tortoise | C | Bond | Fe | +Stamina (8–12). Body: shell. | Reptile |
 | Bramble Hare | C | Bond | Fe | +Stamina (6–10), +Run (2–4). Body: long ears. | Rabbit |
 | Meadow Fawn | C | Bond | Ba | +Stamina (7–11). *Keyword:* **Graze** — regen 1 Stamina between Legs. | Beast |
-| Deeproot Fruit | C | Regimen | — | +Stamina (10–14) flat, no body change. | — |
-| Sunlit Berries | C | Regimen | — | +Stamina (4–6) and +1 Mind. | — |
+| Deeproot Fruit | C | Potion | — | +Stamina (10–14) flat, no body change. | — |
+| Sunlit Berries | C | Potion | — | +Stamina (4–6) and +1 Mind. | — |
 | Second Wind | U | Technique | 1 | This Leg: this Chao cannot DNF regardless of remaining Stamina. | — |
-| Old Growth | U | Bond | Ba | +Stamina (14–20). *Keyword:* **Rooted** — +50% effect from all future Green Regimen cards. | Beast |
+| Old Growth | U | Bond | Ba | +Stamina (14–20). *Keyword:* **Rooted** — +50% effect from all future Green Potion cards. | Beast |
 | Tortoiseshell Ward | U | Trait | — | Whenever this Chao would DNF a Race, instead finish last with full streak credit (once per Generation). | — |
 | Hollow Log Den | U | Bond | Ba | +Stamina (12–16), +Swim (4–6). Body: mossy shell-plates. | Reptile, Beast |
 | Evergreen Warden | R | Bond | Fe | +Stamina (18–24). *Keyword:* **Unshakeable** — immune to the first negative Technique played against this Chao each Bout. | Beast |
 | Ancient Grove Blessing | R | Trait | — | This Chao's Stamina stat is also used as a second defense check in Karate Bouts (average with Swim). | — |
-| Heartroot | R | Regimen | — | +Stamina (20–28) flat. If this Chao is already the highest-Stamina Chao on your board, double the gain. | — |
+| Heartroot | R | Potion | — | +Stamina (20–28) flat. If this Chao is already the highest-Stamina Chao on your board, double the gain. | — |
 | Thousand-Year Chao-Oak | L | Bond | Ba | +Stamina (28–36). *Keyword:* **Evergreen** — this Bond Card cannot be overwritten by future bonding (permanent slot lock). Body: bark plating, small canopy. | Beast, Reptile |
 | Bountiful Harvest | L | Technique | 2 | This Race: gain +1 Fruit for every Leg this Chao completes, win or lose. | — |
 
@@ -30,8 +32,8 @@ Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list th
 | Skitter Finch | C | Bond | Fe | +Run (7–11). Body: quick-tap feet. | Bird |
 | Dustdash Lizard | C | Bond | Fe | +Run (8–12). *Keyword:* **Bolt** — first Sprint Leg each Race auto-succeeds. | Reptile |
 | Firecracker Beetle | C | Bond | Ha | +Run (6–9), +Power (2–4). Body: bright wing-case. | Insect |
-| Quickstep Draught | C | Regimen | — | +Run (10–14) flat. | — |
-| Racing Stripe Tonic | C | Regimen | — | +Run (5–8), +1 Luck. | — |
+| Quickstep Draught | C | Potion | — | +Run (10–14) flat. | — |
+| Racing Stripe Tonic | C | Potion | — | +Run (5–8), +1 Luck. | — |
 | Adrenaline Rush | U | Technique | 1 | This round: this Chao takes two actions instead of one in the Karate Bout. | — |
 | Cinder Sprinter | U | Bond | Fe | +Run (13–18). *Keyword:* **Overclock** — +Run scales up the more Fruit you have banked (cap +6). | Beast |
 | Startling Cry | U | Trait | — | The first time each Bout this Chao is targeted by an enemy Technique, gain +Run equal to half this Chao's current Run for the rest of the Bout. | — |
@@ -49,8 +51,8 @@ Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list th
 | Snapping Turtle | C | Bond | Ha | +Power (7–11). Body: heavy jaw. | Reptile |
 | Iron-Hide Boar | C | Bond | Ha | +Power (8–12). *Keyword:* **Bulldoze** — auto-succeeds Obstacle legs. | Beast |
 | Stag Beetle Pincer | C | Bond | Ha | +Power (6–10), +Stamina (2–4). Body: mandibles. | Insect |
-| Crushblow Tonic | C | Regimen | — | +Power (10–14) flat. | — |
-| Grinding Stone | C | Regimen | — | +Power (5–8), −Fly (2) *(a genuine downside common — the set's "risk" filler)*. | — |
+| Crushblow Tonic | C | Potion | — | +Power (10–14) flat. | — |
+| Grinding Stone | C | Potion | — | +Power (5–8), −Fly (2) *(a genuine downside common — the set's "risk" filler)*. | — |
 | Heavy Strike | U | Technique | 1 | This round: this Chao's next hit ignores defender's Swim entirely. | — |
 | Warthog Tusks | U | Bond | Ha | +Power (13–18). *Keyword:* **Knockback+** — on hit, delays the defender's next action. | Beast |
 | Bloodrock Idol | U | Trait | — | Whenever this Chao's Stamina drops below half, permanently gain +3 Power for the rest of the Generation. | — |
@@ -68,8 +70,8 @@ Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list th
 | Darting Sparrow | C | Bond | Ba | +Fly (7–11). Body: small wings. | Bird |
 | Glassfin Guppy | C | Bond | Ba | +Fly (6–10). *Keyword:* **Slipstream** — +10% Evasion vs. the first hit each Bout. | Fish |
 | Paper Kite Moth | C | Bond | Ba | +Fly (8–12), +1 Mind. Body: patterned wings. | Insect |
-| Windcatcher Draught | C | Regimen | — | +Fly (10–14) flat. | — |
-| Cloudsight Tonic | C | Regimen | — | +Fly (4–6), draw an extra card at your next Draft Booster. | — |
+| Windcatcher Draught | C | Potion | — | +Fly (10–14) flat. | — |
+| Cloudsight Tonic | C | Potion | — | +Fly (4–6), draw an extra card at your next Draft Booster. | — |
 | Feint | U | Technique | 1 | This round: this Chao auto-dodges the next incoming hit. | — |
 | Hummingbird Dash | U | Bond | Ba | +Fly (13–18). *Keyword:* **Hover** — always takes the shortcut fork if Fly threshold is met, no roll. | Bird |
 | Tidewatcher's Eye | U | Trait | — | At the start of each Draft Booster you open, look at 2 extra cards from the pack before picking (then return them). | — |
@@ -87,8 +89,8 @@ Legend: **C**ommon / **U**ncommon / **R**are / **L**egendary. Bond Cards list th
 | Koi Pond Elder | C | Bond | Ba | +Swim (7–11). Body: trailing fins. | Fish |
 | Harbor Seal Pup | C | Bond | Ba | +Swim (8–12). *Keyword:* **Buoyant** — reduces Stamina cost of Water legs. | Beast |
 | Reed Crane | C | Bond | Fe | +Swim (6–10), +Fly (2–4). Body: long legs. | Bird |
-| Clearwater Draught | C | Regimen | — | +Swim (10–14) flat. | — |
-| Tidepool Tonic | C | Regimen | — | +Swim (5–8), +2 Happiness (Rest Garden currency). | — |
+| Clearwater Draught | C | Potion | — | +Swim (10–14) flat. | — |
+| Tidepool Tonic | C | Potion | — | +Swim (5–8), +2 Happiness (Rest Garden currency). | — |
 | Guard Stance | U | Technique | 1 | This round: this Chao takes half damage from the next hit. | — |
 | Coral Turtle Shell | U | Bond | Ba | +Swim (13–18). *Keyword:* **Bulwark** — the first Karate round each Bout deals 0 damage to this Chao. | Reptile |
 | Still Waters | U | Trait | — | If this Chao finishes a Race without using any Techniques, gain double Fruit for that Race. | — |
@@ -150,5 +152,5 @@ All 10 two-color pairings across the 5 stat-colors, each with a name and a one-l
 
 - **Duplicate seeding:** each color's Common Bond Cards are weighted to appear ~2.2x per full draft on average across a full booster set, so seeing a 3rd copy of a specific Common for an Awakening (GDD §5.4) is a real, if uncommon, in-draft event rather than a mathematical impossibility.
 - **The one deliberate downside common** (Grinding Stone, Black) exists on purpose — MTG core sets always ship a few "real tradeoff" commons so that late picks in a color aren't *all* strictly good, which is what makes signal-reading in the first place meaningful.
-- **Legendaries are all Bond or Technique**, never Regimen/Trait/Item — keeps the "build-around bomb" feeling attached to something visible on the Chao itself (a body change or a splashy in-event moment), matching pillar #3 (rarity discovered through play).
+- **Legendaries are all Bond or Technique**, never Potion/Trait/Item — keeps the "build-around bomb" feeling attached to something visible on the Chao itself (a body change or a splashy in-event moment), matching pillar #3 (rarity discovered through play).
 - This set is intentionally small (~95 cards vs. a real MTG set's 250+) — it's sized to prove the framework and support internal playtesting, not to ship as final content. The roadmap's content-pass milestone scopes out the actual target set size.

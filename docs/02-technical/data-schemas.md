@@ -20,7 +20,8 @@ type SpeciesTag =
 type Alignment = "hero" | "dark" | "neutral";
 
 type CardType =
-  | "bond" | "regimen" | "technique" | "trait" | "item" | "habitat";
+  | "bond" | "potion" | "technique" | "trait" | "item" | "habitat";
+  // "potion" renamed from "regimen" 2026-08-20 (roadmap.md Phase 5.6).
 ```
 
 ## Cards
@@ -50,10 +51,12 @@ interface BondCard extends CardBase {
   bodyMutation: string;       // asset/animation key for the cosmetic change
 }
 
-interface RegimenCard extends CardBase {
-  type: "regimen";
+interface PotionCard extends CardBase {
+  // Renamed from RegimenCard 2026-08-20 (roadmap.md Phase 5.6).
+  type: "potion";
   statGrants: StatGrant[];
   // no slot, no speciesTags, no bodyMutation — deliberately "just numbers"
+  secondaryColors?: StatColor[]; // 0-2, blending added 2026-08-20 — rarity-gated same as Bond Card complexity (GDD §3.5)
 }
 
 interface TechniqueCard extends CardBase {
@@ -83,7 +86,7 @@ interface HabitatCard extends CardBase {
 }
 
 type Card =
-  | BondCard | RegimenCard | TechniqueCard | TraitCard | ItemCard | HabitatCard;
+  | BondCard | PotionCard | TechniqueCard | TraitCard | ItemCard | HabitatCard;
 ```
 
 ## Effects (shared trigger/effect shape — architecture.md §5.3)
@@ -287,5 +290,5 @@ interface ResolutionResult {
 - **Derived fields aren't stored redundantly where avoidable** (`colorIdentity`, `alignment`, `speciesTagCounts` on `Chao` are computed from `bondSlots`/`traits`/`items`) — but they're listed as fields here rather than pure getters because the sim core is plain-data/no-class per the architecture doc; treat them as fields that a `recomputeDerived(chao)` pure function refreshes after every bonding/unbonding operation, not fields any code writes to directly.
 - **`ResolutionResult` is the only return shape** for `resolveRace` and `resolveBout` — both always return the new state *and* the event log together, so the "legibility" architectural requirement (architecture.md §5.1) can never accidentally be dropped by a call site that only wanted the final state.
 - These types intentionally don't yet cover breeding (GDD §8, explicitly post-MVP) — when that's picked up, it'll need an `Egg` type carrying two-parent allele data, deferred until it's actually being built.
-- **Regimen Cards affect stats but not color identity or alignment.** A consumed Regimen Card is gone the instant it's used — it isn't "currently bonded/attached" the way a Bond or Trait Card is, and GDD §3.3 scopes alignment specifically to attached cards. This wasn't obvious from the GDD text alone; it's called out explicitly in `packages/sim/src/chao/bonding.ts`'s `consumeRegimen` so the distinction isn't lost.
-- **Implementation status (Phase 0, see [`roadmap.md`](../03-roadmap/roadmap.md)):** all types above are implemented in `packages/sim/src/types.ts`. `createChao`, `bondCard`, `consumeRegimen`, `recomputeDerived`, and `computeSplashTax` are built and unit-tested (`packages/sim/src/chao/`); the seeded RNG is in `packages/sim/src/rng/`; a ~30-card slice (Green + Red + colorless Items + two Habitats) is authored in `packages/sim/src/cards/data/`. The draft engine, Race/Bout resolvers, and run/map state machine referenced elsewhere in this doc are **not yet implemented** — their types exist here so the shape is agreed on ahead of time, but no logic consumes `DraftState`, `Generation`, or `GameState` yet.
+- **Potion Cards (renamed from Regimen 2026-08-20) affect stats but not color identity or alignment.** A consumed Potion Card is gone the instant it's used — it isn't "currently bonded/attached" the way a Bond or Trait Card is, and GDD §3.3 scopes alignment specifically to attached cards. This wasn't obvious from the GDD text alone; it's called out explicitly in `packages/sim/src/chao/bonding.ts`'s `consumePotion` so the distinction isn't lost. This holds even for a blended Potion (`secondaryColors`) — blending is purely additive/flavor, with no color-identity or splash-tax hook.
+- **Implementation status (Phase 0 when first written, see [`roadmap.md`](../03-roadmap/roadmap.md) for what's shipped well past that point since):** all types above are implemented in `packages/sim/src/types.ts`. `createChao`, `bondCard`, `consumePotion`, `recomputeDerived`, and `computeSplashTax` are built and unit-tested (`packages/sim/src/chao/`); the seeded RNG is in `packages/sim/src/rng/`; a ~30-card slice (Green + Red + colorless Items + two Habitats) is authored in `packages/sim/src/cards/data/`. The draft engine, Race/Bout resolvers, and run/map state machine referenced elsewhere in this doc were **not yet implemented as of Phase 0** — their types existed here so the shape was agreed on ahead of time. Much of this doc (this section included) hasn't been kept current with later phases' real schema changes (e.g. Bond Cards' per-grant `region` model, `RolledStatGrant`, `BondedCard`, `SeedCard`) — treat `packages/sim/src/types.ts` as the authoritative current schema, this doc as a Phase-0-era sketch.

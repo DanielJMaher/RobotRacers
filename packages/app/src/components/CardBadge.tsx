@@ -44,8 +44,12 @@ function describeCard(card: Card): string {
       return card.statGrants
         .map((grant) => `${grant.region ?? '?'} ${formatStatGrant(grant)}`)
         .join(', ');
-    case 'regimen':
-      return card.statGrants.map(formatStatGrant).join(', ');
+    case 'potion': {
+      const grants = card.statGrants.map(formatStatGrant).join(', ');
+      return card.secondaryColors && card.secondaryColors.length > 0
+        ? `${grants} (blend: ${[card.color, ...card.secondaryColors].join('/')})`
+        : grants;
+    }
     case 'technique':
       return `${card.energyCost} energy`;
     case 'trait':

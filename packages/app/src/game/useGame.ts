@@ -8,8 +8,8 @@ import type {
   HabitatCard,
   InterludeDraftState,
   NextTournamentSetup,
+  PotionCard,
   RaceResult,
-  RegimenCard,
   SeedCard,
   TechniqueCard,
   TournamentState,
@@ -24,7 +24,7 @@ import {
   computeBreedingPools,
   computeRaceTiming,
   computeSplashTax,
-  consumeRegimen as consumeRegimenOnChao,
+  consumePotion as consumePotionOnChao,
   coreGardenSet,
   createChao,
   createDraft,
@@ -290,11 +290,11 @@ export function useGame() {
     [tournament, appendLog],
   );
 
-  const consumeRegimenCard = useCallback(
-    (card: RegimenCard) => {
+  const consumePotionCard = useCallback(
+    (card: PotionCard, poolIndex: number) => {
       if (!tournament) return;
       const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
-      const { chao: fed, events } = consumeRegimenOnChao(playerChao, card, rngRef.current);
+      const { chao: fed, events } = consumePotionOnChao(playerChao, card, rngRef.current);
       setTournament({
         ...tournament,
         entrants: {
@@ -302,7 +302,10 @@ export function useGame() {
           [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: fed },
         },
       });
-      appendLog([`${card.name} is consumed.`, ...events.map((e) => narrateSimEvent(e))]);
+      // Potions are one-time use, same as Bond Cards (roadmap.md Phase 5.5) —
+      // this specific drafted copy is spent the moment it's consumed.
+      setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
+      appendLog([`${card.name} is consumed — spent.`, ...events.map((e) => narrateSimEvent(e))]);
     },
     [tournament, appendLog],
   );
@@ -482,7 +485,7 @@ export function useGame() {
     continueToTournament,
     bondBondCard,
     awakenBondCard,
-    consumeRegimenCard,
+    consumePotionCard,
     plantSeed,
     toggleTechnique,
     runNextGroupRace,

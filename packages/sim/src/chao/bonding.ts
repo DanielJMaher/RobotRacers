@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { rollInRange } from '../rng';
-import type { BondCard, BondedCard, Chao, RegimenCard, RolledStatGrant, SimEvent } from '../types';
+import type { BondCard, BondedCard, Chao, PotionCard, RolledStatGrant, SimEvent } from '../types';
 import { recomputeDerived } from './derived';
 
 export interface BondResult {
@@ -11,7 +11,7 @@ export interface BondResult {
 }
 
 function rollStatGrants(
-  card: BondCard | RegimenCard,
+  card: BondCard | PotionCard,
   rng: Rng,
 ): { rolled: RolledStatGrant[]; events: SimEvent[] } {
   const rolled: RolledStatGrant[] = [];
@@ -89,15 +89,18 @@ export function awakenBondCard(chao: Chao, card: BondCard): BondResult {
   return { chao: recomputeDerived(nextChao), events };
 }
 
-// Consumes a Regimen Card (GDD §4.2): a permanent, one-time flat stat grant
-// with no slot and no species tags — and, deliberately, no effect on color
-// identity or alignment, since a consumed card isn't "currently bonded/
-// attached" the way a Bond or Trait card is (GDD §3.3 scopes alignment to
-// attached cards specifically). Not reversible; there's nothing left to
-// overwrite once it's spent.
-export function consumeRegimen(
+// Consumes a Potion Card (GDD §4.2, renamed from Regimen 2026-08-20): a
+// permanent, one-time flat stat grant with no slot and no species tags —
+// and, deliberately, no effect on color identity or alignment, since a
+// consumed card isn't "currently bonded/attached" the way a Bond or Trait
+// card is (GDD §3.3 scopes alignment to attached cards specifically). Not
+// reversible; there's nothing left to overwrite once it's spent. One-time
+// use is enforced at the app layer (a Potion's pool entry is removed the
+// same way a Bond Card's is), not here — this function just applies the
+// grant, same as it always has.
+export function consumePotion(
   chao: Chao,
-  card: RegimenCard,
+  card: PotionCard,
   rng: Rng,
 ): { chao: Chao; events: SimEvent[] } {
   const stats = { ...chao.stats };

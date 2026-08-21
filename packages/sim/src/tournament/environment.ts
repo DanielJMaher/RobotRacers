@@ -48,10 +48,10 @@ export function createEnvironment(drawnHabitats: HabitatCard[]): Environment {
 // Records a newly-drafted Seed card as available to plant — called whenever
 // the main Draft Booster or either Environment Interlude Booster hands the
 // player a Seed. Kept separate from `unplacedHabitats`/`fruit` bookkeeping
-// but the same pattern: Seeds, unlike Bond/Regimen cards, are consumed by
-// planting (GDD §6.9 — "one-time plant, no replanting"), so they can't just
-// live forever in the shared drafted pool the way repeatedly-bondable Bond
-// Cards do.
+// but the same pattern: Seeds are consumed by planting (GDD §6.9 —
+// "one-time plant, no replanting"), same one-time-use lifecycle Bond/Potion
+// cards now also follow (roadmap.md Phase 5.5) — this bookkeeping predates
+// that change and was already modeling a spend-once card correctly.
 export function addAvailableSeed(environment: Environment, seed: SeedCard): Environment {
   return { ...environment, availableSeeds: [...environment.availableSeeds, seed] };
 }

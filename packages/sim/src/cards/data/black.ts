@@ -1,4 +1,4 @@
-import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../types';
+import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 
 // "Core Garden" example set — Black (Power) cards.
 // Source: docs/01-design/card-set-list.md
@@ -12,6 +12,10 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // model: `slot` -> per-grant `region` (hands->arms here), `bodyMutation:
 // string` -> `bodyMutations: {region: string}`. Mechanical schema migration
 // only — see green.ts's header note for the full rationale.
+//
+// Potion cards (Crushblow Tonic, Grinding Stone, Quarry Grip Tonic) moved
+// out to cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) — see that
+// file's own header note.
 
 export const snappingTurtle: BondCard = {
   id: 'bond.snapping_turtle',
@@ -54,30 +58,6 @@ export const stagBeetlePincer: BondCard = {
   ],
   speciesTags: ['insect'],
   bodyMutations: { arms: 'mandibles' },
-};
-
-export const crushblowTonic: RegimenCard = {
-  id: 'regimen.crushblow_tonic',
-  name: 'Crushblow Tonic',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'black',
-  statGrants: [{ stat: 'power', min: 10, max: 14 }],
-};
-
-export const grindingStone: RegimenCard = {
-  id: 'regimen.grinding_stone',
-  name: 'Grinding Stone',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'black',
-  // The set's one deliberate downside common (card-set-list.md) — a genuine
-  // tradeoff so late Black picks aren't strictly good, per that doc's
-  // set-design notes. rollInRange handles a negative min===max fine.
-  statGrants: [
-    { stat: 'power', min: 5, max: 8 },
-    { stat: 'fly', min: -2, max: -2 },
-  ],
 };
 
 export const heavyStrike: TechniqueCard = {
@@ -270,21 +250,10 @@ export const sheerFaceCrawler: BondCard = {
   },
 };
 
-export const quarryGripTonic: RegimenCard = {
-  id: 'regimen.quarry_grip_tonic',
-  name: 'Quarry Grip Tonic',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'black',
-  statGrants: [{ stat: 'climb', min: 8, max: 12 }],
-};
-
 export const blackCards = [
   snappingTurtle,
   ironHideBoar,
   stagBeetlePincer,
-  crushblowTonic,
-  grindingStone,
   heavyStrike,
   warthogTusks,
   bloodrockIdol,
@@ -296,5 +265,4 @@ export const blackCards = [
   totalEclipse,
   boulderRam,
   sheerFaceCrawler,
-  quarryGripTonic,
 ];

@@ -15,13 +15,13 @@ const RARITY_POWER_WEIGHT: Record<Rarity, number> = {
   legendary: 6,
 };
 
-// Non-Bond/Regimen cards don't have a stat total to compare — this flat
+// Non-Bond/Potion cards don't have a stat total to compare — this flat
 // baseline is a placeholder heuristic (see roadmap.md's open tuning
 // questions) rather than a mechanically-derived number.
 const NON_STAT_CARD_BASELINE = 8;
 
 function statTotal(card: Card): number {
-  if (card.type === 'bond' || card.type === 'regimen') {
+  if (card.type === 'bond' || card.type === 'potion') {
     return card.statGrants.reduce((sum, grant) => sum + (grant.min + grant.max) / 2, 0);
   }
   return NON_STAT_CARD_BASELINE;

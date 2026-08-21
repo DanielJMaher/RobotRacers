@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { brambleHare, deeprootFruit, hollowLogDen } from '../cards/data/green';
+import { brambleHare, hollowLogDen } from '../cards/data/green';
+import { deeprootFruit } from '../cards/data/potions';
 import { jackrabbitReflex, skitterFinch } from '../cards/data/red';
 import { createRng } from '../rng';
-import { awakenBondCard, bondCard, computeSplashTax, consumeRegimen } from './bonding';
+import { awakenBondCard, bondCard, computeSplashTax, consumePotion } from './bonding';
 import { createChao } from './factory';
 
 describe('createChao', () => {
@@ -116,17 +117,17 @@ describe('awakenBondCard', () => {
   });
 });
 
-describe('consumeRegimen', () => {
+describe('consumePotion', () => {
   it('grants a permanent flat stat with no bonded card, tag, or identity change', () => {
     const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
     const rng = createRng(3);
 
-    const { chao: fed, events } = consumeRegimen(chao, deeprootFruit, rng);
+    const { chao: fed, events } = consumePotion(chao, deeprootFruit, rng);
 
     expect(fed.stats.stamina).toBeGreaterThanOrEqual(10);
     expect(fed.stats.stamina).toBeLessThanOrEqual(14);
     expect(fed.bondedCards).toEqual([]);
-    expect(fed.colorIdentity).toEqual([]); // Regimen is consumed, not "attached" — GDD §3.3
+    expect(fed.colorIdentity).toEqual([]); // Potion is consumed, not "attached" — GDD §3.3
     expect(fed.speciesTagCounts).toEqual({});
     expect(events).toHaveLength(1);
   });

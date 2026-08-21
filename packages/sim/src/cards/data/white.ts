@@ -1,17 +1,21 @@
-import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../types';
+import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 
 // "Core Garden" example set — White (Swim) cards.
 // Source: docs/01-design/card-set-list.md
 //
-// Same `custom`-op convention as the other color files. Two cards here hit
-// gaps worth flagging individually: Tidepool Tonic's Happiness bonus (not a
-// Stat) and Guardian's Oath, which is fundamentally a multi-Chao board
-// mechanic with no meaning until Phase 3's board exists — see their notes.
+// Same `custom`-op convention as the other color files. Guardian's Oath is
+// fundamentally a multi-Chao board mechanic with no meaning until Phase 3's
+// board exists — see its own note.
 //
 // Migrated 2026-08-20 (roadmap.md Phase 2.5) to the corrected Bond Card
 // model: `slot` -> per-grant `region` (feet->legs, back unchanged),
 // `bodyMutation: string` -> `bodyMutations: {region: string}`. Mechanical
 // schema migration only — see green.ts's header note for the full rationale.
+//
+// Potion cards (Clearwater Draught, Tidepool Tonic) moved out to
+// cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5), which now
+// consolidates every color's Potions into one cross-color file — see that
+// file's own header note for why.
 
 export const koiPondElder: BondCard = {
   id: 'bond.koi_pond_elder',
@@ -53,28 +57,6 @@ export const reedCrane: BondCard = {
   ],
   speciesTags: ['bird'],
   bodyMutations: { legs: 'long_legs' },
-};
-
-export const clearwaterDraught: RegimenCard = {
-  id: 'regimen.clearwater_draught',
-  name: 'Clearwater Draught',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'white',
-  statGrants: [{ stat: 'swim', min: 10, max: 14 }],
-};
-
-export const tidepoolTonic: RegimenCard = {
-  id: 'regimen.tidepool_tonic',
-  name: 'Tidepool Tonic',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'white',
-  // card-set-list.md's flavor text also grants "+2 Happiness" — Happiness
-  // isn't a Stat (it's a separate Chao field, chao.happiness, fed by Rest
-  // Garden nodes and DNF tracking per the GDD), so it can't be expressed via
-  // RegimenCard's statGrants. Implemented as the Swim grant alone.
-  statGrants: [{ stat: 'swim', min: 5, max: 8 }],
 };
 
 export const guardStance: TechniqueCard = {
@@ -256,8 +238,6 @@ export const whiteCards = [
   koiPondElder,
   harborSealPup,
   reedCrane,
-  clearwaterDraught,
-  tidepoolTonic,
   guardStance,
   coralTurtleShell,
   stillWaters,

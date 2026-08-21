@@ -24,7 +24,7 @@ export interface CreateDraftParams {
 // IMPORTANT: callers must reuse the SAME Rng instance across an entire draft
 // session (createDraft, then startRound each time a round completes) rather
 // than recreating one from `state.seed` per call. This matches the calling
-// convention already established in chao/bonding.ts (bondCard/consumeRegimen
+// convention already established in chao/bonding.ts (bondCard/consumePotion
 // both take `rng: Rng` as a parameter, never derive one internally from
 // stored state) — the seed is persisted purely for provenance, not as a way
 // to re-derive the sequence mid-draft.

@@ -1,4 +1,4 @@
-import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../types';
+import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 
 // "Core Garden" example set — Green (Stamina) cards.
 // Source: docs/01-design/card-set-list.md
@@ -10,6 +10,10 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // cards still grant only positive stats from a single region each. Giving
 // them the full multi-region mixed-sign "Penguin" treatment is a tracked
 // content follow-up (roadmap.md), not done here.
+//
+// Potion cards (Deeproot Fruit, Sunlit Berries, Heartroot) moved out to
+// cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) — see that file's
+// own header note.
 
 export const packleafTortoise: BondCard = {
   id: 'bond.packleaf_tortoise',
@@ -54,27 +58,6 @@ export const meadowFawn: BondCard = {
   },
 };
 
-export const deeprootFruit: RegimenCard = {
-  id: 'regimen.deeproot_fruit',
-  name: 'Deeproot Fruit',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'green',
-  statGrants: [{ stat: 'stamina', min: 10, max: 14 }],
-};
-
-export const sunlitBerries: RegimenCard = {
-  id: 'regimen.sunlit_berries',
-  name: 'Sunlit Berries',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'green',
-  statGrants: [
-    { stat: 'stamina', min: 4, max: 6 },
-    { stat: 'mind', min: 1, max: 1 },
-  ],
-};
-
 export const secondWind: TechniqueCard = {
   id: 'technique.second_wind',
   name: 'Second Wind',
@@ -104,7 +87,7 @@ export const oldGrowth: BondCard = {
     apply: [
       {
         op: 'custom',
-        description: 'Rooted: +50% effect from all future Green Regimen cards bonded to this Chao.',
+        description: 'Rooted: +50% effect from all future Green Potion cards used on this Chao.',
       },
     ],
   },
@@ -177,15 +160,6 @@ export const ancientGroveBlessing: TraitCard = {
   },
 };
 
-export const heartroot: RegimenCard = {
-  id: 'regimen.heartroot',
-  name: 'Heartroot',
-  rarity: 'rare',
-  type: 'regimen',
-  color: 'green',
-  statGrants: [{ stat: 'stamina', min: 20, max: 28 }],
-};
-
 export const thousandYearChaoOak: BondCard = {
   id: 'bond.thousand_year_chao_oak',
   name: 'Thousand-Year Chao-Oak',
@@ -229,15 +203,12 @@ export const greenCards = [
   packleafTortoise,
   brambleHare,
   meadowFawn,
-  deeprootFruit,
-  sunlitBerries,
   secondWind,
   oldGrowth,
   tortoiseshellWard,
   hollowLogDen,
   evergreenWarden,
   ancientGroveBlessing,
-  heartroot,
   thousandYearChaoOak,
   bountifulHarvest,
 ];

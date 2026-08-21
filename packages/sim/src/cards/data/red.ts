@@ -1,4 +1,4 @@
-import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../types';
+import type { BondCard, TechniqueCard, TraitCard } from '../../types';
 
 // "Core Garden" example set — Red (Run) cards.
 // Source: docs/01-design/card-set-list.md
@@ -8,6 +8,10 @@ import type { BondCard, RegimenCard, TechniqueCard, TraitCard } from '../../type
 // unchanged), `bodyMutation: string` -> `bodyMutations: {region: string}`.
 // This is a mechanical schema migration, not a content redesign — see
 // green.ts's header note for the full rationale.
+//
+// Potion cards (Quickstep Draught, Racing Stripe Tonic, Bounding Draught)
+// moved out to cards/data/potions.ts 2026-08-20 (roadmap.md Phase 5.5) —
+// see that file's own header note.
 
 export const skitterFinch: BondCard = {
   id: 'bond.skitter_finch',
@@ -48,27 +52,6 @@ export const firecrackerBeetle: BondCard = {
   ],
   speciesTags: ['insect'],
   bodyMutations: { arms: 'bright_wing_case' },
-};
-
-export const quickstepDraught: RegimenCard = {
-  id: 'regimen.quickstep_draught',
-  name: 'Quickstep Draught',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'red',
-  statGrants: [{ stat: 'run', min: 10, max: 14 }],
-};
-
-export const racingStripeTonic: RegimenCard = {
-  id: 'regimen.racing_stripe_tonic',
-  name: 'Racing Stripe Tonic',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'red',
-  statGrants: [
-    { stat: 'run', min: 5, max: 8 },
-    { stat: 'luck', min: 1, max: 1 },
-  ],
 };
 
 export const adrenalineRush: TechniqueCard = {
@@ -261,21 +244,10 @@ export const cliffhopperGoat: BondCard = {
   },
 };
 
-export const boundingDraught: RegimenCard = {
-  id: 'regimen.bounding_draught',
-  name: 'Bounding Draught',
-  rarity: 'common',
-  type: 'regimen',
-  color: 'red',
-  statGrants: [{ stat: 'jump', min: 8, max: 12 }],
-};
-
 export const redCards = [
   skitterFinch,
   dustdashLizard,
   firecrackerBeetle,
-  quickstepDraught,
-  racingStripeTonic,
   adrenalineRush,
   cinderSprinter,
   startlingCry,
@@ -287,5 +259,4 @@ export const redCards = [
   photoFinish,
   springHeelHare,
   cliffhopperGoat,
-  boundingDraught,
 ];

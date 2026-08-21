@@ -1,4 +1,4 @@
-import type { BodyRegion, BondCard, Card, Chao, RegimenCard, Stat, TechniqueCard } from '@chao-draft/sim';
+import type { BodyRegion, BondCard, Card, Chao, PotionCard, Stat, TechniqueCard } from '@chao-draft/sim';
 import { CardBadge } from './CardBadge';
 
 interface GardenScreenProps {
@@ -8,7 +8,7 @@ interface GardenScreenProps {
   selectedTechniqueIds: Set<string>;
   onBondCard: (card: BondCard, poolIndex: number) => void;
   onAwakenBondCard: (card: BondCard, poolIndices: [number, number, number]) => void;
-  onConsumeRegimen: (card: RegimenCard) => void;
+  onConsumePotion: (card: PotionCard, poolIndex: number) => void;
   onToggleTechnique: (id: string) => void;
 }
 
@@ -37,7 +37,7 @@ export function GardenScreen({
   selectedTechniqueIds,
   onBondCard,
   onAwakenBondCard,
-  onConsumeRegimen,
+  onConsumePotion,
   onToggleTechnique,
 }: GardenScreenProps) {
   // Bond Cards are one-time use (roadmap.md, corrected 2026-08-20): bonding
@@ -50,7 +50,15 @@ export function GardenScreen({
       (entry): entry is { card: BondCard; poolIndex: number } =>
         entry.card.type === 'bond' && !usedPoolIndices.has(entry.poolIndex),
     );
-  const regimenCards = pool.filter((c): c is RegimenCard => c.type === 'regimen');
+  // Potions are one-time use too (roadmap.md Phase 5.5, rebranded from
+  // Regimen 2026-08-20) — same poolIndex-based consumption tracking as Bond
+  // Cards, reusing the same `usedPoolIndices` set.
+  const unusedPotionEntries = pool
+    .map((card, poolIndex) => ({ card, poolIndex }))
+    .filter(
+      (entry): entry is { card: PotionCard; poolIndex: number } =>
+        entry.card.type === 'potion' && !usedPoolIndices.has(entry.poolIndex),
+    );
   const techniqueCards = pool.filter((c): c is TechniqueCard => c.type === 'technique');
   const loadedTechniques = techniqueCards.filter((c) => selectedTechniqueIds.has(c.id));
 
@@ -145,14 +153,11 @@ export function GardenScreen({
           </>
         )}
 
-        <h3>Regimen Cards ({regimenCards.length})</h3>
+        <h3>Potions ({unusedPotionEntries.length})</h3>
+        <p className="hint-text">Potions are one-time use — a card is spent the moment you drink it.</p>
         <div className="card-grid">
-          {regimenCards.map((card, index) => (
-            <CardBadge
-              key={`${card.id}-${index}`}
-              card={card}
-              onClick={() => onConsumeRegimen(card)}
-            />
+          {unusedPotionEntries.map(({ card, poolIndex }) => (
+            <CardBadge key={poolIndex} card={card} onClick={() => onConsumePotion(card, poolIndex)} />
           ))}
         </div>
 

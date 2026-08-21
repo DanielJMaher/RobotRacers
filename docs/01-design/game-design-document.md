@@ -22,7 +22,7 @@ These are the constraints every system below has to satisfy. Any feature that vi
 | Source Chao Garden system | MTG Draft idea borrowed | Slay the Spire idea borrowed | Autochess idea borrowed | Becomes, in this design |
 |---|---|---|---|---|
 | Feeding animals (stat + body + behavior) | Booster draft: pick cards, pass packs, build a limited pool | Card rewards define your build over a run | — | **Bond Cards**, drafted and fused onto a Chao (§4.2) |
-| Chaos Drives (pure stat, no body change) | Common "filler" stat cards that round out a curve | — | — | **Regimen Cards** (§4.2) |
+| Chaos Drives (pure stat, no body change) | Common "filler" stat cards that round out a curve | — | — | **Potion Cards** (renamed from "Regimen Cards" 2026-08-20, §4.2) |
 | Fruit / one-off buffs | Instants as combat tricks | Race-scoped energy economy | — | **Technique Cards** played mid-Race (§4.2, §5) |
 | Animal-mimicked behavior | Keyword abilities on creatures | — | — | Keywords granted by Bond Cards (§4.2) |
 | Alignment slider (Hero/Dark/Neutral) | Color pie's order/chaos moral coding | — | — | **Alignment** derived from net color balance of bonded cards (§3.3) |
@@ -55,7 +55,7 @@ Mind and Luck are kept as minor modifiers (Mind affects Technique success chance
 
 ### 3.2 The color pie
 
-Every stat is assigned a color, MTG-style. This is the load-bearing translation of the whole design: **a Bond/Regimen/Technique card's color tells you which stat it primarily raises, and its color *identity* tells you which archetype it belongs to.**
+Every stat is assigned a color, MTG-style. This is the load-bearing translation of the whole design: **a Bond/Potion/Technique card's color tells you which stat it primarily raises, and its color *identity* tells you which archetype it belongs to.** (Potion Cards, renamed from "Regimen" 2026-08-20, can now name up to 2 additional `secondaryColors` when blended — §4.2 — but this doesn't change how color identity itself is computed, since a consumed card was never part of that calculation to begin with.)
 
 | Stat | Color | Identity (Slay-the-Spire-style flavor of "what this archetype does") |
 |---|---|---|
@@ -120,7 +120,7 @@ Feeding in the source material is really three separable effects bundled into on
 | Type | Source-material equivalent | Attaches to | Lifespan | Effect |
 |---|---|---|---|---|
 | **Bond Card** | Animal | A Chao — cumulatively, across any number of Body Regions (§3.5, **corrected 2026-08-20**) | Permanent, additive — never overwritten or replaced | One or more stat grants (rarity-scaled rolls, §4.3), each tagged to a Body Region and each *possibly negative* — Commons touch one region with positive grants only, Uncommon+ can span multiple regions with a deliberate mix of positive and negative (negatives always smaller in magnitude, §3.5). Cosmetic body mutation per affected region, blending with every other card ever bonded rather than replacing it. Carries 1–2 **Species Tags** (Rabbit, Bird, Fish, Dragon, Insect, Beast, …) — cosmetic/flavor only now that board-wide synergy breakpoints are cut (§2), but feeds the visual-blend weighting per region. |
-| **Regimen Card** | Chaos Drive | Consumed, no slot | One-time | Flat stat grant, no cosmetic change, no keyword. The "pure numbers" card — always safe to take late in a pack when nothing else fits. |
+| **Potion Card** (renamed from "Regimen Card" 2026-08-20 — same card, clearer name) | Chaos Drive | Consumed, no slot | One-time | Flat stat grant, no cosmetic change, no keyword. The "pure numbers" card — always safe to take late in a pack when nothing else fits. **Color-blending added 2026-08-20:** a Potion can carry up to 2 `secondaryColors` alongside its primary color (3 total), rarity-gated the same way Bond Card complexity is (§3.5) — Common stays single-color, Uncommon introduces 2-color blends, Rare/Legendary use 3-color blends with bigger per-stat grants. Blending doesn't touch color identity/splash tax (§4.4) — a consumed card was never "attached" in the sense that section scopes alignment to. |
 | **Technique Card** | Fruit / trained technique | Held in a Technique hand, played during a Race Leg | Consumed on use (Legendary techniques are Exile-on-use — once per Tournament) | A combat trick: costs Energy (§5.2), resolves an immediate effect scoped to the current Leg (e.g. "auto-win the Power check on this Obstacle leg"). No longer usable in a Bout — that scope is gone. |
 | **Trait Card** | Behavior mimicry | A Chao, max 2 concurrent, not slot-limited | Permanent | A passive triggered ability tied to Race-relevant triggers only (`leg_start`, `leg_won`, `race_start`, `stamina_below`) now that Bout-only triggers (`on_hit`, `on_dodge`, `round_start`, `bout_start`) have no resolver to fire in. |
 | **Item Card** | Toys/emblems | A Chao, freely re-equippable | Permanent while equipped, movable | Colorless — draftable and usable regardless of a Chao's color identity. The answer to being color-screwed out of a pack. |
@@ -135,7 +135,7 @@ Four tiers, mapped onto the source material's E–S hidden-grade idea (research 
 
 | Rarity | Pack frequency (per 15-card pack) | Design space |
 |---|---|---|
-| Common | 10 | Simple, single-effect, define the baseline curve. Regimen cards are mostly here. |
+| Common | 10 | Simple, single-effect, define the baseline curve. Potion cards (renamed from "Regimen" 2026-08-20) are mostly here — Common Potions stay single-color, per §4.2's blending rule. |
 | Uncommon | 3 | A Bond Card with one keyword, or a Trait/Item with a real decision attached. |
 | Rare | 1–2 | Strong keyword, often bends a whole archetype, alignment-relevant. |
 | Legendary | ~1 in 8 packs | Build-around, run-defining. Often a unique Technique or an Awakening-adjacent Bond Card. |
