@@ -4,11 +4,15 @@ import { CardBadge } from './CardBadge';
 interface GardenScreenProps {
   chao: Chao;
   pool: Card[];
+  usedPoolIndices: Set<number>;
   selectedTechniqueIds: Set<string>;
-  onBondCard: (card: BondCard) => void;
+  onBondCard: (card: BondCard, poolIndex: number) => void;
+  onAwakenBondCard: (card: BondCard, poolIndices: [number, number, number]) => void;
   onConsumeRegimen: (card: RegimenCard) => void;
   onToggleTechnique: (id: string) => void;
 }
+
+const AWAKENING_COPIES_NEEDED = 3;
 
 // Locked 5-region set (GDD §3.5, corrected 2026-08-20) — replaces the old
 // 4-slot list. Bonding is cumulative now, so this drives a per-region "look"
@@ -29,15 +33,43 @@ const STAT_ORDER: Stat[] = [
 export function GardenScreen({
   chao,
   pool,
+  usedPoolIndices,
   selectedTechniqueIds,
   onBondCard,
+  onAwakenBondCard,
   onConsumeRegimen,
   onToggleTechnique,
 }: GardenScreenProps) {
-  const bondCards = pool.filter((c): c is BondCard => c.type === 'bond');
+  // Bond Cards are one-time use (roadmap.md, corrected 2026-08-20): bonding
+  // consumes the specific drafted copy, so only still-unused ones are shown
+  // here at all — `poolIndex` (position in the full pool, not just among
+  // Bond Cards) is what onBondCard/onAwakenBondCard actually consume.
+  const unusedBondEntries = pool
+    .map((card, poolIndex) => ({ card, poolIndex }))
+    .filter(
+      (entry): entry is { card: BondCard; poolIndex: number } =>
+        entry.card.type === 'bond' && !usedPoolIndices.has(entry.poolIndex),
+    );
   const regimenCards = pool.filter((c): c is RegimenCard => c.type === 'regimen');
   const techniqueCards = pool.filter((c): c is TechniqueCard => c.type === 'technique');
   const loadedTechniques = techniqueCards.filter((c) => selectedTechniqueIds.has(c.id));
+
+  // Awakening (GDD §4.6): 3 unused copies of the same Bond Card can fuse
+  // into one enhanced application instead of being bonded individually.
+  const awakeningGroups = new Map<string, number[]>();
+  for (const { card, poolIndex } of unusedBondEntries) {
+    const indices = awakeningGroups.get(card.id) ?? [];
+    indices.push(poolIndex);
+    awakeningGroups.set(card.id, indices);
+  }
+  const awakenableCards = unusedBondEntries
+    .filter(({ card }) => (awakeningGroups.get(card.id)?.length ?? 0) >= AWAKENING_COPIES_NEEDED)
+    .reduce<{ card: BondCard; poolIndices: [number, number, number] }[]>((acc, { card }) => {
+      if (acc.some((entry) => entry.card.id === card.id)) return acc; // one Awaken option per card id
+      const indices = awakeningGroups.get(card.id)!.slice(0, AWAKENING_COPIES_NEEDED) as [number, number, number];
+      acc.push({ card, poolIndices: indices });
+      return acc;
+    }, []);
 
   return (
     <section className="garden">
@@ -77,6 +109,7 @@ export function GardenScreen({
         <ul className="bonding-history-list">
           {chao.bondedCards.map((bonded, index) => (
             <li key={`${bonded.card.id}-${index}`}>
+              {bonded.awakened ? '★ ' : ''}
               {bonded.card.name} → {Object.keys(bonded.card.bodyMutations).join(', ')}
             </li>
           ))}
@@ -84,12 +117,33 @@ export function GardenScreen({
       </div>
 
       <div className="garden-column">
-        <h3>Bond Cards ({bondCards.length})</h3>
+        <h3>Bond Cards ({unusedBondEntries.length})</h3>
+        <p className="hint-text">Bonding is one-time use — a card is spent the moment you bond it.</p>
         <div className="card-grid">
-          {bondCards.map((card, index) => (
-            <CardBadge key={`${card.id}-${index}`} card={card} onClick={() => onBondCard(card)} />
+          {unusedBondEntries.map(({ card, poolIndex }) => (
+            <CardBadge key={poolIndex} card={card} onClick={() => onBondCard(card, poolIndex)} />
           ))}
         </div>
+
+        {awakenableCards.length > 0 && (
+          <>
+            <h3>Awakening Available</h3>
+            <ul className="standings-list">
+              {awakenableCards.map(({ card, poolIndices }) => (
+                <li key={card.id}>
+                  <span>{card.name} — 3.5x a single copy's average grant</span>
+                  <button
+                    type="button"
+                    className="slot-assign-btn"
+                    onClick={() => onAwakenBondCard(card, poolIndices)}
+                  >
+                    Awaken (uses 3)
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
 
         <h3>Regimen Cards ({regimenCards.length})</h3>
         <div className="card-grid">

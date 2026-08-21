@@ -6,6 +6,7 @@ import { EventLogPanel } from './components/EventLogPanel';
 import { GardenScreen } from './components/GardenScreen';
 import { HabitatPlacementScreen } from './components/HabitatPlacementScreen';
 import { InterludeBoosterScreen } from './components/InterludeBoosterScreen';
+import { RaceResultsScreen } from './components/RaceResultsScreen';
 import { TournamentPanel } from './components/TournamentPanel';
 import { useGame } from './game/useGame';
 
@@ -20,61 +21,69 @@ export function App() {
         <code>docs/03-roadmap/roadmap.md</code> for scope.
       </p>
 
-      {game.phase === 'draft' && (
-        <DraftScreen
-          pack={game.playerPack}
-          currentRound={game.draft.currentRound}
-          currentPick={game.draft.currentPick}
-          packsPerDraft={game.draft.packsPerDraft}
-          packSize={game.draft.packSize}
-          onPick={game.pickCard}
-        />
-      )}
+      {game.raceResult ? (
+        <RaceResultsScreen result={game.raceResult} onContinue={game.dismissRaceResult} />
+      ) : (
+        <>
+          {game.phase === 'draft' && (
+            <DraftScreen
+              pack={game.playerPack}
+              currentRound={game.draft.currentRound}
+              currentPick={game.draft.currentPick}
+              packsPerDraft={game.draft.packsPerDraft}
+              packSize={game.draft.packSize}
+              onPick={game.pickCard}
+            />
+          )}
 
-      {game.phase === 'habitat_placement' && game.environment && (
-        <HabitatPlacementScreen
-          environment={game.environment}
-          onPlace={game.placeHabitatCard}
-          onContinue={game.continueToTournament}
-        />
-      )}
+          {game.phase === 'habitat_placement' && game.environment && (
+            <HabitatPlacementScreen
+              environment={game.environment}
+              onPlace={game.placeHabitatCard}
+              onContinue={game.continueToTournament}
+            />
+          )}
 
-      {game.phase === 'interlude' && game.interludeDraft && game.interludeRound && (
-        <InterludeBoosterScreen
-          interlude={game.interludeDraft}
-          round={game.interludeRound}
-          onPick={game.pickInterludeCard}
-        />
-      )}
+          {game.phase === 'interlude' && game.interludeDraft && game.interludeRound && (
+            <InterludeBoosterScreen
+              interlude={game.interludeDraft}
+              round={game.interludeRound}
+              onPick={game.pickInterludeCard}
+            />
+          )}
 
-      {game.phase === 'breeding' && game.tournament && (
-        <BreedingScreen
-          tournament={game.tournament}
-          setup={game.breedingSetup}
-          onConfirmPartner={game.pickBreedingPartner}
-          onStartNextTournament={game.startNextTournament}
-        />
-      )}
+          {game.phase === 'breeding' && game.tournament && (
+            <BreedingScreen
+              tournament={game.tournament}
+              setup={game.breedingSetup}
+              onConfirmPartner={game.pickBreedingPartner}
+              onStartNextTournament={game.startNextTournament}
+            />
+          )}
 
-      {game.phase === 'tournament' && game.chao && game.tournament && game.environment && (
-        <div className="tournament-layout">
-          <GardenScreen
-            chao={game.chao}
-            pool={game.playerPool}
-            selectedTechniqueIds={game.selectedTechniqueIds}
-            onBondCard={game.bondBondCard}
-            onConsumeRegimen={game.consumeRegimenCard}
-            onToggleTechnique={game.toggleTechnique}
-          />
-          <EnvironmentPanel environment={game.environment} onPlantSeed={game.plantSeed} />
-          <TournamentPanel
-            tournament={game.tournament}
-            loadedTechniqueCount={game.selectedTechniqueIds.size}
-            onRunNextRace={game.runNextGroupRace}
-            onRunFinalRace={game.runFinalRace}
-          />
-          <EventLogPanel log={game.log} />
-        </div>
+          {game.phase === 'tournament' && game.chao && game.tournament && game.environment && (
+            <div className="tournament-layout">
+              <GardenScreen
+                chao={game.chao}
+                pool={game.playerPool}
+                usedPoolIndices={game.usedPoolIndices}
+                selectedTechniqueIds={game.selectedTechniqueIds}
+                onBondCard={game.bondBondCard}
+                onAwakenBondCard={game.awakenBondCard}
+                onConsumeRegimen={game.consumeRegimenCard}
+                onToggleTechnique={game.toggleTechnique}
+              />
+              <EnvironmentPanel environment={game.environment} onPlantSeed={game.plantSeed} />
+              <TournamentPanel
+                tournament={game.tournament}
+                loadedTechniqueCount={game.selectedTechniqueIds.size}
+                onRunNextRace={game.runNextGroupRace}
+                onRunFinalRace={game.runFinalRace}
+              />
+              <EventLogPanel log={game.log} />
+            </div>
+          )}
+        </>
       )}
     </main>
   );

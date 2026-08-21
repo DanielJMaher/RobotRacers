@@ -13,6 +13,7 @@ export * from './draft/bots';
 export * from './draft/engine';
 export * from './events/shared';
 export * from './events/race';
+export * from './events/timing';
 export * from './tournament/entrants';
 export * from './tournament/fieldRace';
 export * from './tournament/bracket';

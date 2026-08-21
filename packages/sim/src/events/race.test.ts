@@ -168,8 +168,8 @@ describe('resolveRace', () => {
 
     expect(result.legsCompleted).toBe(0);
     expect(result.events.filter((e) => e.type === 'leg_result')).toEqual([
-      { type: 'leg_result', chaoId: 'c1', legType: 'climb', success: false },
-      { type: 'leg_result', chaoId: 'c1', legType: 'jump', success: false },
+      { type: 'leg_result', chaoId: 'c1', legType: 'climb', success: false, stat: 'climb', difficulty: 20 },
+      { type: 'leg_result', chaoId: 'c1', legType: 'jump', success: false, stat: 'jump', difficulty: 20 },
     ]);
   });
 });

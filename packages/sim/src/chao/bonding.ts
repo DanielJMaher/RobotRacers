@@ -58,6 +58,37 @@ export function bondCard(chao: Chao, card: BondCard, rng: Rng): BondResult {
   };
 }
 
+// Awakening (GDD §4.6, roadmap.md Phase 6, implemented alongside the
+// one-time-use Bond Card correction): 3 copies of the same Bond Card fuse
+// into a single, more powerful application — 3.5x a single copy's AVERAGE
+// stat grant, deterministic (no grade roll, no rng) rather than a fresh
+// random roll. This is a genuinely different mechanic from normal bonding
+// (reliable and large vs. random-in-range), not just "bond it 3 times" —
+// it produces exactly ONE BondedCard history entry, flagged `awakened`.
+const AWAKENING_MULTIPLIER = 3.5;
+
+export function awakenBondCard(chao: Chao, card: BondCard): BondResult {
+  const stats = { ...chao.stats };
+  const rolled: RolledStatGrant[] = [];
+  const events: SimEvent[] = [];
+
+  for (const grant of card.statGrants) {
+    const amount = Math.round(((grant.min + grant.max) / 2) * AWAKENING_MULTIPLIER);
+    rolled.push(
+      grant.region === undefined
+        ? { stat: grant.stat, amount }
+        : { stat: grant.stat, amount, region: grant.region },
+    );
+    stats[grant.stat] += amount;
+    events.push({ type: 'grade_roll', cardId: card.id, stat: grant.stat, roll: amount });
+  }
+
+  const bondedCard: BondedCard = { card, rolledGrants: rolled, awakened: true };
+  const nextChao: Chao = { ...chao, stats, bondedCards: [...chao.bondedCards, bondedCard] };
+
+  return { chao: recomputeDerived(nextChao), events };
+}
+
 // Consumes a Regimen Card (GDD §4.2): a permanent, one-time flat stat grant
 // with no slot and no species tags — and, deliberately, no effect on color
 // identity or alignment, since a consumed card isn't "currently bonded/

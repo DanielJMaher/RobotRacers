@@ -8,6 +8,7 @@ import type {
   HabitatCard,
   InterludeDraftState,
   NextTournamentSetup,
+  RaceResult,
   RegimenCard,
   SeedCard,
   TechniqueCard,
@@ -17,9 +18,11 @@ import {
   addAvailableSeed,
   advancePlayerGroupRace,
   advanceTick,
+  awakenBondCard as awakenBondCardOnChao,
   bondCardWithSplashTax,
   buildCardPool,
   computeBreedingPools,
+  computeRaceTiming,
   computeSplashTax,
   consumeRegimen as consumeRegimenOnChao,
   coreGardenSet,
@@ -39,6 +42,35 @@ import {
   triggerFruitGain,
 } from '@chao-draft/sim';
 import { narrateDraftPick, narrateSimEvent } from './narration';
+
+export interface RaceResultEntry {
+  chaoId: string;
+  name: string;
+  eliminated: boolean;
+  timing: ReturnType<typeof computeRaceTiming>;
+}
+
+export interface PendingRaceResult {
+  entries: RaceResultEntry[]; // ranked best to worst
+  isFinalRace: boolean;
+}
+
+function buildRaceResultEntries(
+  ranking: string[],
+  results: Record<string, RaceResult>,
+  nameById: Record<string, string>,
+  eliminatedChaoId: string | undefined,
+): RaceResultEntry[] {
+  return ranking.map((chaoId) => {
+    const result = results[chaoId]!;
+    return {
+      chaoId,
+      name: nameById[chaoId] ?? chaoId,
+      eliminated: chaoId === eliminatedChaoId,
+      timing: computeRaceTiming(result.finalChao, result.events),
+    };
+  });
+}
 
 const CARD_POOL = buildCardPool(coreGardenSet);
 const SEAT_COUNT = 4;
@@ -84,7 +116,14 @@ export function useGame() {
   // 23 entirely fresh entrants.
   const [pendingPlayerChao, setPendingPlayerChao] = useState<Chao | null>(null);
   const [pendingOthers, setPendingOthers] = useState<Chao[] | null>(null);
+  // Bond Cards are one-time use: bonding (or Awakening) a specific drafted
+  // copy consumes it — tracked by its position in `playerPool` (stable for
+  // the lifetime of one Tournament, since `draft`'s own pool never mutates
+  // and `extraPool` only ever appends) rather than by card id, since
+  // duplicates of "the same" card share an id but are separate copies.
+  const [usedPoolIndices, setUsedPoolIndices] = useState<Set<number>>(new Set());
   const [selectedTechniqueIds, setSelectedTechniqueIds] = useState<Set<string>>(new Set());
+  const [raceResult, setRaceResult] = useState<PendingRaceResult | null>(null);
   const [log, setLog] = useState<string[]>([]);
 
   const appendLog = useCallback((lines: string[]) => {
@@ -190,7 +229,7 @@ export function useGame() {
   }, [environment, appendLog]);
 
   const bondBondCard = useCallback(
-    (card: BondCard) => {
+    (card: BondCard, poolIndex: number) => {
       if (!tournament || !environment) return;
       const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
       const result = bondCardWithSplashTax(playerChao, environment, card, DEFAULT_SPLASH_TAX, rngRef.current);
@@ -211,14 +250,44 @@ export function useGame() {
         },
       });
       setEnvironment(result.environment);
+      // Bond Cards are one-time use: this specific drafted copy is spent the
+      // moment it's bonded, never bondable again.
+      setUsedPoolIndices((prev) => new Set(prev).add(poolIndex));
       // Bonding is cumulative now (GDD §3.5, corrected 2026-08-20) — this
       // always adds, never replaces, so the log just names the touched
       // regions rather than talking about a slot being occupied/replaced.
       const regions = Object.keys(card.bodyMutations).join(', ');
       const taxNote = result.taxPaid > 0 ? ` (paid ${result.taxPaid} Fruit splash tax)` : '';
-      appendLog([`${card.name} bonds onto ${regions}${taxNote}.`, ...result.events.map((e) => narrateSimEvent(e))]);
+      appendLog([`${card.name} bonds onto ${regions}${taxNote} — spent.`, ...result.events.map((e) => narrateSimEvent(e))]);
     },
     [tournament, environment, appendLog],
+  );
+
+  const awakenBondCard = useCallback(
+    (card: BondCard, poolIndices: [number, number, number]) => {
+      if (!tournament) return;
+      const playerChao = tournament.entrants[tournament.playerChaoId]!.chao;
+      const { chao: awakened, events } = awakenBondCardOnChao(playerChao, card);
+
+      setTournament({
+        ...tournament,
+        entrants: {
+          ...tournament.entrants,
+          [tournament.playerChaoId]: { ...tournament.entrants[tournament.playerChaoId]!, chao: awakened },
+        },
+      });
+      setUsedPoolIndices((prev) => {
+        const next = new Set(prev);
+        for (const i of poolIndices) next.add(i);
+        return next;
+      });
+      const regions = Object.keys(card.bodyMutations).join(', ');
+      appendLog([
+        `★ ${card.name} Awakened! 3 copies fused onto ${regions} (3.5x average grant) — all 3 spent.`,
+        ...events.map((e) => narrateSimEvent(e)),
+      ]);
+    },
+    [tournament, appendLog],
   );
 
   const consumeRegimenCard = useCallback(
@@ -261,6 +330,10 @@ export function useGame() {
     setTournament(outcome.state);
     // Fruit trigger fires after every race, GDD §6.9.
     const envAfterRace = triggerFruitGain(environment);
+    setRaceResult({
+      entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, outcome.eliminatedChaoId),
+      isFinalRace: false,
+    });
 
     const lines = [
       `--- Race (${outcome.course.legs.length} legs: ${outcome.course.legs.map((leg) => leg.type).join(', ')}) ---`,
@@ -325,6 +398,10 @@ export function useGame() {
     );
     setTournament(outcome.state);
     setEnvironment(triggerFruitGain(environment));
+    setRaceResult({
+      entries: buildRaceResultEntries(outcome.ranking, outcome.results, nameById, undefined),
+      isFinalRace: true,
+    });
     // Reaching the Final Race always means placing 1st/2nd/3rd of 3, so the
     // player always gets a breeding pick here (GDD §6.4) — decided
     // 2026-08-20: elimination before the Final Race ends the run outright,
@@ -371,11 +448,16 @@ export function useGame() {
     setTournament(null);
     setEnvironment(null);
     setExtraPool([]);
+    setUsedPoolIndices(new Set());
     setSelectedTechniqueIds(new Set());
     setBreedingSetup(null);
     setPhase('draft');
     appendLog([`--- ${breedingSetup.playerBaby.name}'s Tournament begins! Draft a fresh pool. ---`]);
   }, [breedingSetup, appendLog]);
+
+  const dismissRaceResult = useCallback(() => {
+    setRaceResult(null);
+  }, []);
 
   const playerPack: Card[] = draft.isComplete ? [] : (draft.packsInFront[PLAYER_SEAT_INDEX] ?? []);
 
@@ -384,18 +466,22 @@ export function useGame() {
     draft,
     playerPack,
     playerPool,
+    usedPoolIndices,
     chao,
     tournament,
     environment,
     interludeDraft,
     interludeRound,
     breedingSetup,
+    raceResult,
+    dismissRaceResult,
     selectedTechniqueIds,
     log,
     pickCard,
     placeHabitatCard,
     continueToTournament,
     bondBondCard,
+    awakenBondCard,
     consumeRegimenCard,
     plantSeed,
     toggleTechnique,

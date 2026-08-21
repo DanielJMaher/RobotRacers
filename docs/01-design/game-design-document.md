@@ -92,7 +92,7 @@ Post-second-evolution, continued bonding still visually mutates the Chao — eve
 
 **This section replaces an earlier, incorrect version of the design.** The original write-up had 4 exclusive Bond Slots where bonding a new card *deleted* whatever was there before. That's wrong, and the fix isn't cosmetic — it changes how Bond Cards, stats, and visuals all work together. Corrected model, grounded in how the source material's feeding actually behaves:
 
-- **A Chao can bond any number of Bond Cards over its lifetime.** There is no slot limit and no replacement. Feeding 5 of the same card stacks its effect 5×; feeding a second, different card afterward *adds on top of*, never erases, what's already there.
+- **A Chao can bond any number of Bond Cards over its lifetime.** There is no slot limit and no replacement. Feeding 5 of the same card stacks its effect 5×; feeding a second, different card afterward *adds on top of*, never erases, what's already there. **Clarified 2026-08-20: each physical drafted copy is one-time use.** Stacking "5 Penguins" means owning and bonding 5 separate drafted Penguin cards — not re-using one copy 5 times. A card is spent the instant it's bonded (or fused via Awakening, §4.6), gone from the pool for good, same lifecycle as Habitat and Seed cards.
 - **One card can affect multiple Body Regions at once, with a mix of positive and negative grants.** The user's own example: a Penguin card touches *Legs* (+Swim, −Run), *Arms* (+Swim, −Power), and *Back* (−Fly) — five separate rolls across three regions, from one card. This is a real, textured push-and-pull, not a single stat stick.
 - **Negatives are always smaller in magnitude than positives, as a hard authoring rule.** Stacking "opposed" creature types (Penguin *and* Monkey) dilutes a build — it never zeroes it out. You can always go wide and still come out net-positive somewhere.
 - **Body Regions (locked 2026-08-20):** **Legs, Arms, Back, Head, Torso** — five regions, replacing the original four (which conflated Legs/Feet and Arms/Hands and had no Torso).
@@ -167,6 +167,8 @@ Drafting **three copies of the same named Bond Card** (anywhere in your pool) le
 
 **Tuning (decided 2026-08-20):** an Awakened card's stat grant is worth **3.5×** a single copy's average grant — deliberately *more* than three copies stacked additively would total (3.0×), not less. A single copy of Bramble Hare granting an average of 8 Stamina would Awaken into a card averaging 28 Stamina (8 × 3.5), not a diminishing-returns 20 (8 × 2.5). This was a deliberate choice to reward duplicate-heavy drafting as a real alternate strategy (mirroring Auto Chess/Underlords, where 3-starring is often *better* than fielding 3 separate weaker units) rather than a soft consolation prize.
 
+**Implemented 2026-08-20 (roadmap.md Phase 5.5), alongside Bond Cards becoming one-time use.** `chao/bonding.ts`'s `awakenBondCard()` is exactly the formula above — deterministic (no grade roll at all, unlike a normal bond), producing one `BondedCard` history entry flagged `awakened`. **Resolved an ambiguity in this section's own "the next time you bond it" phrasing**: having 3 copies does not force-convert your next bond into an Awakening — the player gets an explicit choice, presented in the UI as a separate "Awaken (uses 3)" option alongside the normal per-copy "Bond" action, available whenever 3+ unused copies of a card exist.
+
 ## 5. Race resolution
 
 Per pillar #1, none of this is played directly — it's simulated from Chao stats, bonded cards, and pre-loaded Technique cards. (Karate Bout resolution is cut — see the revision note at the top of this doc.)
@@ -193,6 +195,8 @@ Resolution, per Leg:
 4. Pre-loaded Technique cards fire on trigger, spending the Energy budget set before the Race began (§5.2).
 
 **DNF consequence, revised:** in the original design, a DNF didn't eliminate a Chao from its run — only the final cocoon check mattered. Under the Tournament structure, **a Race directly determines elimination** (last place is out, per §6.2) — so a DNF is likely to *mean* elimination now, since finishing last (or not finishing) in an elimination race ends the Chao's Tournament. This is a meaningful tonal shift from the original design's "a bad Race shouldn't end things on the spot" pillar, and is called out explicitly since it's a direct consequence of the harsher elimination structure the user has chosen (§6.6 confirms this is intentional).
+
+**Race timing, added 2026-08-20 (roadmap.md Phase 5.5).** Every Leg now also has a **time**, in seconds to the tenth, shown on a real per-race Results screen (not just log narration) — replacing "check the scrolling log to see how it went" with an actual ranked table. This is a *display-layer* computation only: it doesn't change pass/fail, DNF, elimination, scoring, or ranking, all of which are still exactly the stat-check/Stamina mechanics above. Calibrated so a brand-new, near-zero-stat Gen-1 baby averages roughly **9.0 seconds per Leg** regardless of course length (a real calibration target, not made up per-race) — better stats make a Leg faster, a fumbled Leg costs extra time, harder Legs take longer. Exact constants are a first-draft placeholder, same tuning status as the difficulty/variance numbers above.
 
 ### 5.2 Energy
 

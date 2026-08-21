@@ -68,6 +68,12 @@ body {
   color: #c7ccd6;
 }
 
+.hint-text {
+  font-size: 0.8rem;
+  color: #9aa0ab;
+  margin: -0.25rem 0 0.5rem;
+}
+
 .tournament-layout {
   display: grid;
   /* auto-fit + minmax lets columns wrap onto additional rows on narrower
@@ -228,4 +234,39 @@ body {
   font-size: 0.75rem;
   color: #9aa0ab;
   white-space: nowrap;
+}
+
+.race-results-table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.race-results-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.race-results-table th,
+.race-results-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #2a2e38;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.race-results-table td:last-child {
+  white-space: normal;
+}
+
+.race-results-table tr.is-eliminated {
+  opacity: 0.5;
+}
+
+.race-results-table tr.is-eliminated td:nth-child(2) {
+  text-decoration: line-through;
+}
+
+.leg-fumbled {
+  color: #f59e0b;
 }

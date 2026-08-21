@@ -232,6 +232,11 @@ export interface RolledStatGrant {
 export interface BondedCard {
   card: BondCard;
   rolledGrants: RolledStatGrant[];
+  // Set when this entry came from Awakening (GDD §4.6, roadmap.md) — 3
+  // copies of the same card fused into one 3.5x-average-grant application —
+  // rather than a normal single bond. Flavor/history-display only; doesn't
+  // change how the grants themselves are folded into stats/derived fields.
+  awakened?: boolean;
 }
 
 export interface Chao {
@@ -377,7 +382,11 @@ export interface GameState {
 // nothing "dormant" to preserve — they were purely Bout's own output shape.
 export type SimEvent =
   | { type: 'grade_roll'; cardId: string; stat: Stat; roll: number }
-  | { type: 'leg_result'; chaoId: string; legType: string; success: boolean }
+  // `stat`/`difficulty` added for the race-timing follow-up (roadmap.md) —
+  // whichever stat/difficulty actually decided this Leg (the fork's
+  // shortcut check if taken, the leg's own otherwise), so a display-only
+  // timing computation doesn't need to re-derive fork logic.
+  | { type: 'leg_result'; chaoId: string; legType: string; success: boolean; stat: Stat; difficulty: number }
   | { type: 'dnf'; chaoId: string }
   | { type: 'technique_fired'; cardId: string; chaoId: string }
   | { type: 'trait_fired'; cardId: string; chaoId: string }

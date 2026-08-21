@@ -178,23 +178,46 @@ export function resolveRace(
     events.push(...legStart.events);
     const autoWin = legStart.controlOps.some((op) => op.op === 'autoWinLeg');
 
+    // `stat`/`difficulty` (added for roadmap.md's race-timing follow-up)
+    // record whichever check actually decided this Leg, so a later
+    // display-only timing computation can reconstruct "how hard was this for
+    // this Chao" without re-deriving fork logic — the shortcut's Fly/Swim
+    // check for a taken fork, the leg's own stat otherwise.
     let success: boolean;
+    let usedStat: Stat;
+    let usedDifficulty: number;
     if (autoWin) {
       success = true;
+      usedStat = LEG_STAT[leg.type];
+      usedDifficulty = leg.difficulty;
     } else if (leg.fork) {
       // Both the "do you take the shortcut" check and the shortcut leg
       // itself are resolved against the fork's Fly/Swim stat, not the leg's
       // normal stat — you're flying/swimming across, not running (GDD §6.2).
       // Only the non-shortcut path uses the leg's own stat.
       const tookShortcut = checkLeg(chao, leg.fork.shortcutStat, leg.fork.shortcutThreshold, rng);
-      success = tookShortcut
-        ? checkLeg(chao, leg.fork.shortcutStat, leg.fork.shortcutDifficulty, rng)
-        : checkLeg(chao, LEG_STAT[leg.type], leg.difficulty, rng);
+      if (tookShortcut) {
+        usedStat = leg.fork.shortcutStat;
+        usedDifficulty = leg.fork.shortcutDifficulty;
+      } else {
+        usedStat = LEG_STAT[leg.type];
+        usedDifficulty = leg.difficulty;
+      }
+      success = checkLeg(chao, usedStat, usedDifficulty, rng);
     } else {
-      success = checkLeg(chao, LEG_STAT[leg.type], leg.difficulty, rng);
+      usedStat = LEG_STAT[leg.type];
+      usedDifficulty = leg.difficulty;
+      success = checkLeg(chao, usedStat, usedDifficulty, rng);
     }
 
-    events.push({ type: 'leg_result', chaoId: chao.id, legType: leg.type, success });
+    events.push({
+      type: 'leg_result',
+      chaoId: chao.id,
+      legType: leg.type,
+      success,
+      stat: usedStat,
+      difficulty: usedDifficulty,
+    });
     chao = { ...chao, currentStamina: Math.max(0, chao.currentStamina - leg.staminaCost) };
 
     if (success) {

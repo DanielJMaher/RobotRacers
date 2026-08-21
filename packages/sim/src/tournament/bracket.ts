@@ -1,7 +1,7 @@
 import type { Rng } from '../rng';
 import { shuffle } from '../rng';
 import type { Chao, SimEvent, StatColor, TechniqueCard } from '../types';
-import type { RaceConfig } from '../events/race';
+import type { RaceConfig, RaceResult } from '../events/race';
 import { generateEntrant, generateEntrantNames } from './entrants';
 import { resolveGroupToTopThree, runFieldRace, runGroupEliminationRace } from './fieldRace';
 
@@ -163,6 +163,7 @@ export interface PlayerRaceOutcome {
   state: TournamentState;
   ranking: string[];
   raceEvents: SimEvent[];
+  results: Record<string, RaceResult>; // per-entrant, for e.g. a Race Results screen's per-Leg timing
   course: RaceConfig;
   eliminatedChaoId: string;
   playerEliminated: boolean;
@@ -201,6 +202,7 @@ export function advancePlayerGroupRace(
   const base = {
     ranking: outcome.ranking,
     raceEvents: outcome.raceEvents,
+    results: outcome.results,
     course: outcome.course,
     eliminatedChaoId: outcome.eliminatedChaoId,
   };
@@ -289,6 +291,7 @@ export interface FinalRaceOutcome {
   state: TournamentState;
   ranking: string[];
   raceEvents: SimEvent[];
+  results: Record<string, RaceResult>;
   course: RaceConfig;
 }
 
@@ -327,6 +330,7 @@ export function runFinalRace(
   return {
     ranking: outcome.ranking,
     raceEvents: outcome.raceEvents,
+    results: outcome.results,
     course: outcome.course,
     state: { ...state, entrants: nextEntrants, phase: 'complete', playerScore, finalRanking: outcome.ranking },
   };

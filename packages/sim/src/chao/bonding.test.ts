@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { brambleHare, deeprootFruit, hollowLogDen } from '../cards/data/green';
 import { jackrabbitReflex, skitterFinch } from '../cards/data/red';
 import { createRng } from '../rng';
-import { bondCard, computeSplashTax, consumeRegimen } from './bonding';
+import { awakenBondCard, bondCard, computeSplashTax, consumeRegimen } from './bonding';
 import { createChao } from './factory';
 
 describe('createChao', () => {
@@ -84,6 +84,35 @@ describe('bondCard', () => {
     expect(bonded.stats.swim).toBeGreaterThanOrEqual(4);
     expect(bonded.speciesTagCounts.reptile).toBe(1);
     expect(bonded.speciesTagCounts.beast).toBe(1);
+  });
+});
+
+describe('awakenBondCard', () => {
+  it("grants 3.5x a single copy's AVERAGE stat grant, deterministically (no rng involved)", () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: awakened, events } = awakenBondCard(chao, brambleHare);
+
+    // brambleHare: stamina 6-10 (avg 8 * 3.5 = 28), run 2-4 (avg 3 * 3.5 = 10.5 -> 11).
+    expect(awakened.stats.stamina).toBe(28);
+    expect(awakened.stats.run).toBe(11);
+    expect(events.filter((e) => e.type === 'grade_roll')).toHaveLength(2);
+  });
+
+  it('is fully deterministic — awakening the same card twice gives identical results', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const first = awakenBondCard(chao, brambleHare);
+    const second = awakenBondCard(chao, brambleHare);
+    expect(first.chao.stats).toEqual(second.chao.stats);
+  });
+
+  it('appends exactly one bondedCards entry, flagged awakened', () => {
+    const chao = createChao({ id: 'c1', name: 'Test Chao', bornGeneration: 1 });
+    const { chao: awakened } = awakenBondCard(chao, brambleHare);
+
+    expect(awakened.bondedCards).toHaveLength(1);
+    expect(awakened.bondedCards[0]?.awakened).toBe(true);
+    expect(awakened.bondedCards[0]?.card.id).toBe(brambleHare.id);
+    expect(awakened.speciesTagCounts.rabbit).toBe(1); // still folds into derived fields normally
   });
 });
 
